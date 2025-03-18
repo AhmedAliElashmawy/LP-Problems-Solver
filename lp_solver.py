@@ -7,72 +7,104 @@ class LPSolver:
         self.basic_vars = []
         self.var_names = []
         self.steps = []
-        self.answer = ()
+        self.answer = None
 
-    def _create_simplex_tableau(self, objective_coeffs, constraint_coeffs, rhs_values):
-        self.basic_vars = []
-        self.var_names = []
-        self.steps = []
-
-        num_constraints, num_variables = len(constraint_coeffs), len(objective_coeffs)
-        tableau = np.zeros((num_constraints + 1, num_variables + num_constraints + 1))
-
-        # Fill the tableau
-        tableau[:-1, :num_variables] = constraint_coeffs
-        np.fill_diagonal(tableau[:-1, num_variables:num_variables + num_constraints], 1)  # Slack variables
-        tableau[:-1, -1] = rhs_values  # RHS values
-
-        # For minimization, negate the objective function coefficients
-        tableau[-1, :num_variables] = -1 * np.array(objective_coeffs)
-
-        return tableau
-
-    def solve_simplex(self, maximize, objective_coeffs, constraint_coeffs, rel_coeffs, rhs_values):
-        for relation in rel_coeffs:
-            if relation != "<=":
-                print("Simplex is not appropriate!")
-                return None, None, None
-        tableau = self._create_simplex_tableau(objective_coeffs, constraint_coeffs, rhs_values)
+    def create_simplex_tableau(self, objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, restricted):
+        if ">=" in rel_coeffs or "=" in rel_coeffs:
+            print("Simplex isn't the right method!")
+            return None
 
         num_constraints, num_variables = len(constraint_coeffs), len(objective_coeffs)
-        self.var_names = [f"x{i + 1}" for i in range(num_variables)] + [f"s{i + 1}" for i in
-                                                                        range(num_constraints)] + [
-                             "RHS"]
-        self.basic_vars = [f"s{i + 1}" for i in range(num_constraints)]  # Slack variables as initial basis
+
+        unrestricted_variables = sum(1 for val in restricted if not val)
+        total_variables = num_variables + unrestricted_variables  # Extra columns for unrestricted variables
+
+        tableau = np.zeros((num_constraints + 1, total_variables + num_constraints + 1))
+
+        var_index = 0
+        expanded_constraint_coeffs = []
+        expanded_objective_coeffs = []
+        var_names = []
+
+        for i in range(num_variables):
+            if restricted[i]:
+                expanded_constraint_coeffs.append([row[i] for row in constraint_coeffs])
+                expanded_objective_coeffs.append(objective_coeffs[i])
+                var_names.append(f"x{i + 1}")
+            else:
+                expanded_constraint_coeffs.append([row[i] for row in constraint_coeffs])
+                expanded_constraint_coeffs.append([-row[i] for row in constraint_coeffs])
+                # expanded are already in LHS but objective still in RHS
+                expanded_objective_coeffs.append(objective_coeffs[i])
+                expanded_objective_coeffs.append(-objective_coeffs[i])
+                var_names.append(f"x{i + 1}+")
+                var_names.append(f"x{i + 1}-")
+
+        tableau[:-1, :len(expanded_constraint_coeffs)] = np.array(expanded_constraint_coeffs).T
+        np.fill_diagonal(
+            tableau[:-1, len(expanded_constraint_coeffs):len(expanded_constraint_coeffs) + num_constraints],
+            1)  # Slack vars
+        tableau[:-1, -1] = rhs_values
+        tableau[-1, :len(expanded_objective_coeffs)] = -1 * np.array(expanded_objective_coeffs)  # Min objective
+
+        var_names += [f"s{i + 1}" for i in range(num_constraints)] + ["RHS"]
+        self.var_names = var_names
+        self.basic_vars = [f"s{i + 1}" for i in range(num_constraints)]
+
+        return pd.DataFrame(tableau, index=self.basic_vars + ["Z"], columns=self.var_names)
+
+    def solve_simplex(self, maximize, tableau_df):
+        if tableau_df is None:
+            print("Unsolvable with simplex")
+            return None, self.steps, None
+
+        tableau = tableau_df.to_numpy()
+        self.var_names = list(tableau_df.columns)
+        self.basic_vars = list(tableau_df.index[:-1])
+        self.steps.append(tableau_df.copy())
+
+
+        for i, bv in enumerate(self.basic_vars):
+            col_index = self.var_names.index(bv)
+            if tableau[-1][col_index] != 0:
+                factor = tableau[-1][col_index] / tableau[i][col_index]
+                tableau[-1] -= factor * tableau[i]
+
         self.steps.append(pd.DataFrame(tableau.copy(), index=self.basic_vars + ["Z"], columns=self.var_names))
 
-        while np.any(tableau[-1, :-1] < 0 if maximize else tableau[-1, :-1] > 0):  # Different condition for min/max
-            pivot_col = np.argmin(tableau[-1, :-1]) if maximize else np.argmax(
-                tableau[-1, :-1])  # Different pivot selection
+        # Detect infeasibility
+        for i in range(tableau.shape[0] - 1):
+            if tableau[i, -1] < 0 and np.all(tableau[i, :-1] <= 0):
+                print("Infeasible solution detected.")
+                return None, self.steps, None
+
+        while np.any(tableau[-1, :-1] < 0 if maximize else tableau[-1, :-1] > 0):
+            pivot_col = np.argmin(tableau[-1, :-1]) if maximize else np.argmax(tableau[-1, :-1])
             ratios = np.full(tableau.shape[0] - 1, np.inf)
 
-            # Compute ratios for minimum positive ratio test
             for i in range(tableau.shape[0] - 1):
                 if tableau[i, pivot_col] > 0:
                     ratios[i] = tableau[i, -1] / tableau[i, pivot_col]
 
-            pivot_row = np.argmin(ratios) if np.any(ratios < np.inf) else None  # Row with min ratio
+            valid_ratios = np.where(ratios > 0, ratios, np.inf)
+            pivot_row = np.argmin(valid_ratios) if np.any(ratios > 0) else None
 
+            # Detect unboundedness
             if pivot_row is None:
-                print("No feasible solution found.")
-                return None
+                print("Unbounded solution detected.")
+                return None, self.steps, None
 
-            # Update basic variables
             self.basic_vars[pivot_row] = self.var_names[pivot_col]
-
-            # Pivoting: Normalize the pivot row
             tableau[pivot_row] /= tableau[pivot_row, pivot_col]
 
-            # Store step after pivot row normalization
             self.steps.append(pd.DataFrame(tableau.copy(), index=self.basic_vars + ["Z"], columns=self.var_names))
 
-            # Update all rows (except pivot row)
             for i in range(tableau.shape[0]):
                 if i != pivot_row:
                     tableau[i] -= tableau[pivot_row] * tableau[i, pivot_col]
 
-            # Store step after full pivot update
             self.steps.append(pd.DataFrame(tableau.copy(), index=self.basic_vars + ["Z"], columns=self.var_names))
+
             new_rhs = dict(zip(self.basic_vars, tableau[:-1, -1]))
             self.answer = tuple(new_rhs.get(var, 0) for var in self.var_names if var.startswith("x"))
 
@@ -98,7 +130,7 @@ class LPSolver:
 
         # Always include both d+ and d- for every constraint
         for i in range(num_constraints):
-            tableau[i, num_variables + i * 2] = -1   # d+
+            tableau[i, num_variables + i * 2] = -1  # d+
             tableau[i, num_variables + i * 2 + 1] = 1  # d-
 
         # RHS values (targets)
@@ -117,26 +149,38 @@ class LPSolver:
 
         # Variable names
         self.var_names = (
-            [f"x{i + 1}" for i in range(num_variables)] +
-            [item for i in range(num_constraints) for item in (f"d{i + 1}+", f"d{i + 1}-")] +
-            ["RHS"]
+                [f"x{i + 1}" for i in range(num_variables)] +
+                [item for i in range(num_constraints) for item in (f"d{i + 1}+", f"d{i + 1}-")] +
+                ["RHS"]
         )
-
 
         self.basic_vars = [f"d{i + 1}-" for i in range(num_constraints)]  # Start with d- as basic vars
         self.steps.append(pd.DataFrame(tableau.copy(), index=self.basic_vars + ["Z"], columns=self.var_names))
-        #TODO: create [z1,z2,...] with P
+        # TODO: create [z1,z2,...] with P
 
         return self.steps[-1]  # Return the final tableau as DataFrame
 
 
-
-
-
 # solver = LPSolver()
-# objective_coeffs = [1, 2]  # Objective function coefficients (for x1, x2)
-# constraint_coeffs = [[1, 1], [2, 3]]  # Constraint coefficients
-# rhs_values = [10, 20]  # Target values
+# objective_coeffs = [2, 1]  # Objective function coefficients (for x1, x2)
+# constraint_coeffs = [[1, 1], [1, -1]]  # Constraint coefficients
+# rel_coefss = ["<=", "<="]
+# rhs_values = [6, 4]  # Target values
+# restricted = [True, True]
 #
-# final_tableau = solver.solve_goal_programming(objective_coeffs, constraint_coeffs, ["<=", "="], rhs_values)
-# print(final_tableau)
+# tableau = solver.create_simplex_tableau(objective_coeffs, constraint_coeffs, rhs_values, rel_coefss, restricted)
+# z, steps, answer = solver.solve_simplex(maximize=True, tableau_df=tableau)
+# for step in steps:
+#     print(step)
+
+solver = LPSolver()
+objective_coeffs = [30, -4]  # Objective function coefficients (for x1, x2)
+constraint_coeffs = [[1, 0], [5, -1]]  # Constraint coefficients
+rel_coefss = ["<=", "<="]
+rhs_values = [5, 30]  # Target values
+restricted = [True, False]
+
+tableau = solver.create_simplex_tableau(objective_coeffs, constraint_coeffs, rhs_values, rel_coefss, restricted)
+z, steps, answer = solver.solve_simplex(maximize=True, tableau_df=tableau)
+for step in steps:
+    print(step)
