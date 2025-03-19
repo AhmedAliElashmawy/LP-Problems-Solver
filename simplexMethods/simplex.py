@@ -10,7 +10,7 @@ class SimplexSolver(LPSolverInterface):
         self.steps = []
         self.answer = None
 
-    def _create_tableau(self, objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, restricted):
+    def create_tableau(self, objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, restricted):
         if ">=" in rel_coeffs or "=" in rel_coeffs:
             print("Simplex isn't the right method!")
             return None
@@ -54,7 +54,7 @@ class SimplexSolver(LPSolverInterface):
 
         return pd.DataFrame(tableau, index=self.basic_vars + ["Z"], columns=self.var_names)
 
-    def _solve(self, maximize, tableau_df):
+    def solve(self, maximize, tableau_df):
         if tableau_df is None:
             print("Unsolvable with simplex")
             return None, self.steps, None
@@ -89,7 +89,7 @@ class SimplexSolver(LPSolverInterface):
             valid_ratios = np.where(ratios > 0, ratios, np.inf)
             pivot_row = np.argmin(valid_ratios) if np.any(ratios > 0) else None
 
-            # Detect unboundedness
+            # Detect unbounded
             if pivot_row is None:
                 print("Unbounded solution detected.")
                 return None, self.steps, None
