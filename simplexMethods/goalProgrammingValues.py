@@ -4,7 +4,7 @@ from .LpInterface import LPSolverInterface
 from .simplex import SimplexSolver
 
 
-class GoalProgrammingSolver(LPSolverInterface):
+class GoalProgrammingValueSolver(LPSolverInterface):
     def __init__(self):
         self.basic_vars = []
         self.var_names = []
