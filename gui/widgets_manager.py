@@ -72,7 +72,6 @@ class WidgetsManager:
         self.parent.obj_label = QLabel("Objective Function:")
         obj_top_layout.addWidget(self.parent.obj_label)
         obj_top_layout.addWidget(self.parent.min_radio)
-        obj_top_layout.addStretch()
         obj_layout.addLayout(obj_top_layout)
         obj_layout.addWidget(self.parent.obj_table)
         self.parent.layout.addLayout(obj_layout)
@@ -82,18 +81,6 @@ class WidgetsManager:
         self.parent.layout.addWidget(self.parent.constraint_label)
         self.parent.layout.addWidget(self.parent.constraint_table)
         
-        # Add variable restrictions (but keep hidden by default)
-        self.parent.layout.addWidget(self.parent.var_restrictions_label)
-        self.parent.layout.addWidget(self.parent.var_restrictions_table)
-        self.parent.var_restrictions_label.hide()
-        self.parent.var_restrictions_table.hide()
-
-        # Add priority table (but keep hidden by default)
-        self.parent.layout.addWidget(self.parent.priority_label)
-        self.parent.layout.addWidget(self.parent.priority_table)
-        self.parent.priority_label.hide()
-        self.parent.priority_table.hide()
-
         # Buttons
         button_layout = QHBoxLayout()
         self.parent.solve_btn = QPushButton("Solve")
@@ -118,7 +105,7 @@ class WidgetsManager:
             widget.hide()
 
     def on_create_tables(self):
-        self.parent.resize(800, 800)  # Increased height to accommodate priority table
+        self.parent.resize(800, 600)
         self.parent.center_window()
         self.parent.table_manager.create_tables()
         
@@ -182,7 +169,7 @@ class WidgetsManager:
         self.parent.center_window()
 
     def on_restriction_change(self, checked):
-        if checked:
+        if checked and hasattr(self.parent, 'var_count'):
             try:
                 vars_count = int(self.parent.var_count.text())
                 self.parent.table_manager.setup_var_restrictions_table(vars_count)
