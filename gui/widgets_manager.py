@@ -61,7 +61,7 @@ class WidgetsManager:
         self.parent.layout.addWidget(self.parent.create_tables_btn)
         
         # Connect goal programming
-        self.parent.goal_programming.toggled.connect(self.on_goal_programming_change)
+        # self.parent.goal_programming.toggled.connect(self.on_goal_programming_change)
 
     def create_hidden_widgets(self):
         # Objective function
@@ -72,6 +72,7 @@ class WidgetsManager:
         self.parent.obj_label = QLabel("Objective Function:")
         obj_top_layout.addWidget(self.parent.obj_label)
         obj_top_layout.addWidget(self.parent.min_radio)
+        obj_top_layout.addStretch()
         obj_layout.addLayout(obj_top_layout)
         obj_layout.addWidget(self.parent.obj_table)
         self.parent.layout.addLayout(obj_layout)
@@ -81,6 +82,18 @@ class WidgetsManager:
         self.parent.layout.addWidget(self.parent.constraint_label)
         self.parent.layout.addWidget(self.parent.constraint_table)
         
+        # Add variable restrictions (but keep hidden by default)
+        self.parent.layout.addWidget(self.parent.var_restrictions_label)
+        self.parent.layout.addWidget(self.parent.var_restrictions_table)
+        self.parent.var_restrictions_label.hide()
+        self.parent.var_restrictions_table.hide()
+
+        # Add priority table (but keep hidden by default)
+        self.parent.layout.addWidget(self.parent.priority_label)
+        self.parent.layout.addWidget(self.parent.priority_table)
+        self.parent.priority_label.hide()
+        self.parent.priority_table.hide()
+
         # Buttons
         button_layout = QHBoxLayout()
         self.parent.solve_btn = QPushButton("Solve")
@@ -105,7 +118,7 @@ class WidgetsManager:
             widget.hide()
 
     def on_create_tables(self):
-        self.parent.resize(800, 600)
+        self.parent.resize(800, 800)  # Increased height to accommodate priority table
         self.parent.center_window()
         self.parent.table_manager.create_tables()
         
@@ -132,8 +145,8 @@ class WidgetsManager:
         
         if self.parent.goal_programming.isChecked():
             try:
-                vars_count = int(self.parent.var_count.text())
-                self.parent.table_manager.setup_priority_table(vars_count)
+                constraints_count = int(self.parent.constraint_count.text())
+                self.parent.table_manager.setup_priority_table(constraints_count)
                 self.parent.priority_table.show()
                 self.parent.priority_label.show()
             except ValueError:
@@ -169,7 +182,7 @@ class WidgetsManager:
         self.parent.center_window()
 
     def on_restriction_change(self, checked):
-        if checked and hasattr(self.parent, 'var_count'):
+        if checked:
             try:
                 vars_count = int(self.parent.var_count.text())
                 self.parent.table_manager.setup_var_restrictions_table(vars_count)
@@ -182,11 +195,14 @@ class WidgetsManager:
             self.parent.var_restrictions_label.hide()
 
     def on_goal_programming_change(self, checked):
-        if checked and self.parent.obj_table.columnCount() > 0:
-            vars_count = self.parent.obj_table.columnCount()
-            self.parent.table_manager.setup_priority_table(vars_count)
-            self.parent.priority_table.show()
-            self.parent.priority_label.show()
+        if checked:
+            try:
+                constraints_count = int(self.parent.constraint_count.text())
+                self.parent.table_manager.setup_priority_table(constraints_count)
+                self.parent.priority_table.show()
+                self.parent.priority_label.show()
+            except ValueError:
+                pass
         else:
             self.parent.priority_table.hide()
             self.parent.priority_label.hide()

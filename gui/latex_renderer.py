@@ -8,7 +8,11 @@ class LatexRenderer:
     def render_lp_problem(problem_type, obj_terms, constraints):
         # Build the objective string.
         objective = " + ".join(obj_terms)
-        header = r"$\text{" + problem_type.capitalize() + r"}\quad Z = " + objective + r"\quad \text{subject to:}$"
+        # Remove "subject to" if there are no constraints
+        if not constraints:
+            header = r"$\text{" + problem_type.capitalize() + r"}\quad Z = " + objective + r"$"
+        else:
+            header = r"$\text{" + problem_type.capitalize() + r"}\quad Z = " + objective + r"\quad \text{subject to:}$"
         
         # Build constraint lines.
         constraint_texts = []

@@ -41,6 +41,11 @@ class LPSolver:
 # for step in steps:
 #     print(step)
 
+#       x1  x2+  x2-    s1   s2    RHS
+# x1   1.0  0.0  0.0   1.0  0.0    5.0
+# x2-  0.0 -1.0  1.0  -5.0  1.0    5.0
+# Z    0.0  0.0  0.0  10.0  4.0  170.0
+
 # # ========== PRIORITY-BASED SOLVER USAGE ==========
 # priority_solver = LPSolver()
 # objective_coeffs = None
@@ -53,8 +58,8 @@ class LPSolver:
 # rhs_values = [40, 60, 35, 600]
 # rel_coeffs = [">=", ">=", ">=", "<="]
 # goals = [1, 2, 3, 4]
-#
-# error, steps = priority_solver.goal_programming_with_priority_levels(False, objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, goals)
+
+# error, steps = priority_solver.goal_programming_with_priority_values(False, objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, goals)
 # print("\nPriority-Based Goal Programming Error:", error)
 # for step in steps:
 #     print(step)

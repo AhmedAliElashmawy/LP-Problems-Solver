@@ -7,6 +7,7 @@ from .table_manager import TableManager
 from .widgets_manager import WidgetsManager
 from .solution_window import SolutionWindow
 from .latex_renderer import LatexRenderer
+from lp_solver import LPSolver
 
 class MathLabel(QLabel):
     def __init__(self, text="", parent=None):
@@ -103,9 +104,34 @@ class LPSolverGUI(QMainWindow):
 
         # Format constraints for LaTeX
         latex_constraints = []
+        # Extract constraint components
+        constraint_coeffs = []
+        rhs_values = []
+        rel_operators = []
+        restricted = []
+        
+        # Get restriction values from var_restrictions_table
+        for col in range(self.obj_table.columnCount()):
+            widget = self.var_restrictions_table.cellWidget(0, col)
+            if widget is None:
+                restricted.append(True)  # Default to restricted if widget is None
+            elif widget.currentText() == "Unrestricted":
+                restricted.append(False)
+            else:
+                restricted.append(True)
+
         for c in constraints:
+            # Get coefficients excluding relation and RHS
+            coeffs = c[:-2]
+            constraint_coeffs.append([float(coef) for coef in coeffs])
+            # Get relation operator
+            rel_operators.append(c[-2])
+            # Get RHS value
+            rhs_values.append(float(c[-1]))
+            
+            # Continue with LaTeX formatting
             terms = []
-            for i, coef in enumerate(c[:-2]):
+            for i, coef in enumerate(coeffs):
                 if coef != "0":
                     if coef == "1":
                         terms.append(f"x_{{{i+1}}}")
@@ -117,6 +143,9 @@ class LPSolverGUI(QMainWindow):
             operator = c[-2].replace("<=", r"\leq").replace(">=", r"\geq")
             constraint_str = f"{' + '.join(terms)} {operator} {c[-1]}"
             latex_constraints.append(constraint_str)
+
+        # Convert objective coefficients to float
+        obj_coeffs = [float(coef) for coef in obj_coeffs]
 
         # Create solution content widget
         content_widget = QWidget()
@@ -133,12 +162,45 @@ class LPSolverGUI(QMainWindow):
         math_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         content_layout.addWidget(math_label)
 
-        # TODO: Implement actual solver steps
-        steps = ["Step 1: Initialize", "Step 2: Calculate", "Step 3: Optimize"]
-        final_answer = "Optimal solution: x1 = 5, x2 = 3"
+        # Debug prints
+        print("Maximize flag:", not self.min_radio.isChecked())
+        print("Objective coefficients:", obj_coeffs)
+        print("Constraint coefficients matrix:", constraint_coeffs)
+        print("RHS values:", rhs_values)
+        print("Relation operators:", rel_operators)
+        print("Restricted variables flags:", restricted)
+
+        # Call solver with all parameters
+        solver = LPSolver()
+        # error, steps = solver.simplex(
+        #     not self.min_radio.isChecked(),  # maximize flag
+        #     obj_coeffs,                      # objective coefficients
+        #     constraint_coeffs,               # constraint coefficients matrix
+        #     rhs_values,                      # right-hand side values
+        #     rel_operators,                   # relation operators
+        #     restricted                       # restricted variables flags
+        # )
+        error, steps = solver.goal_programming_with_priority_values(
+            not self.min_radio.isChecked(),  # maximize flag
+            obj_coeffs,                      # objective coefficients
+            constraint_coeffs,               # constraint coefficients matrix
+            rhs_values,                      # right-hand side values
+            rel_operators,                   # relation operators
+            [1, 2, 3, 4]                    # priority values
+        )
+
+        # Convert DataFrame steps to string representation
+        string_steps = []
+        for step in steps:
+            if hasattr(step, 'to_string'):  # Check if it's a DataFrame
+                string_steps.append(step.to_string())
+            else:
+                string_steps.append(str(step))
+
+        final_answer = "Final answer goes here"
         
         self.hide()
-        self.solution_window.display_native_solution(content_widget, steps, final_answer)
+        self.solution_window.display_native_solution(content_widget, string_steps, final_answer)
         self.solution_window.show()
         self.solution_window.raise_()
         self.solution_window.activateWindow()
