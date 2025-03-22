@@ -61,22 +61,22 @@ class LPSolver:
 # Z    0.0  0.0  0.0  10.0  4.0  170.0
 
 # ========== PRIORITY-BASED SOLVER USAGE ==========
-priority_solver = LPSolver()
-objective_coeffs = None
-constraint_coeffs = [
-    [7, 3],
-    [10, 5],
-    [5, 4],
-    [100, 60]
-]
-rhs_values = [40, 60, 35, 600]
-rel_coeffs = ["≥", "≥", "≥", "≤"]
-goals = [1, 2, 3, 4]
+# priority_solver = LPSolver()
+# objective_coeffs = None
+# constraint_coeffs = [
+#     [7, 3],
+#     [10, 5],
+#     [5, 4],
+#     [100, 60]
+# ]
+# rhs_values = [40, 60, 35, 600]
+# rel_coeffs = ["≥", "≥", "≥", "≤"]
+# goals = [1, 2, 3, 4]
 
-error, steps = priority_solver.goal_programming_with_priority_levels(False, objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, goals)
-print("\nPriority-Based Goal Programming Error:", error)
-for step in steps:
-    print(step)
+# error, steps = priority_solver.goal_programming_with_priority_levels(False, objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, goals)
+# print("\nPriority-Based Goal Programming Error:", error)
+# for step in steps:
+#     print(step)
 
 #      x1 x2      d1+      d1-    d2+ d2-    d3+ d3-        d4+         d4-      RHS
 # x1   1  0     -1/2      1/2      0   0      0   0       1/40       -1/40        5
@@ -87,4 +87,11 @@ for step in steps:
 # Z2   0  0   5*P2/6  -5*P2/6  -2*P2   0      0   0      P2/24      -P2/24   5*P2/3
 # Z3   0  0  -5*P3/6   5*P3/6      0   0  -2*P3   0  13*P3/120  -13*P3/120  10*P3/3
 # Z4   0  0        0        0      0   0      0   0        -P4         -P4        0
+
+
+# Constraint coefficients matrix: [[1500.0, 3000.0], [200.0, 0.0], [100.0, 400.0], [0.0, 250.0]]
+# RHS values: [15000.0, 1000.0, 1200.0, 800.0]
+# Relation operators: ['≤', '≥', '≥', '≥']
+# Restricted variables flags: []
+# Priority values: [0, 1, 2, 3]
 

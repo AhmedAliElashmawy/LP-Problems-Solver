@@ -142,7 +142,7 @@ class LPSolverGUI(QMainWindow):
                     else:
                         terms.append(f"{coef}x_{{{i+1}}}")
             
-            operator = c[-2].replace("<=", r"\leq").replace(">=", r"\geq")
+            operator = c[-2].replace("≤", r"\leq").replace("≥", r"\geq")
             constraint_str = f"{' + '.join(terms)} {operator} {c[-1]}"
             latex_constraints.append(constraint_str)
 
@@ -150,7 +150,7 @@ class LPSolverGUI(QMainWindow):
         for col in range(self.priority_table.columnCount()):
             priority_widget = self.priority_table.cellWidget(0, col)  # Assuming priorities are in the first row
             if priority_widget and isinstance(priority_widget, QLineEdit):
-                priority = int(priority_widget.text() or "1")  # Default to 1 if empty
+                priority = (int(priority_widget.text()) or 0)  # Convert to int or None
                 priorities.append(priority)
 
         # Convert objective coefficients to float
@@ -185,6 +185,24 @@ class LPSolverGUI(QMainWindow):
         match method:
             case "Simplex":
                 error, steps = solver.simplex(
+                    not self.min_radio.isChecked(),  # maximize flag
+                    obj_coeffs,                      # objective coefficients
+                    constraint_coeffs,               # constraint coefficients matrix
+                    rhs_values,                      # right-hand side values
+                    rel_operators,                   # relation operators
+                    restricted                       # restricted variables flags
+                )
+            case "Big-M":
+                error, steps = solver.big_M(
+                    not self.min_radio.isChecked(),  # maximize flag
+                    obj_coeffs,                      # objective coefficients
+                    constraint_coeffs,               # constraint coefficients matrix
+                    rhs_values,                      # right-hand side values
+                    rel_operators,                   # relation operators
+                    restricted                       # restricted variables flags
+                )
+            case "Two-Phase":
+                error, steps = solver.two_phase(
                     not self.min_radio.isChecked(),  # maximize flag
                     obj_coeffs,                      # objective coefficients
                     constraint_coeffs,               # constraint coefficients matrix

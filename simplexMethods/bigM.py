@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import sympy as sp
-from LpInterface import LPSolverInterface
+from .LpInterface import LPSolverInterface
 
 
 class BigMSolver(LPSolverInterface):
@@ -15,7 +15,7 @@ class BigMSolver(LPSolverInterface):
 
     def create_tableau(self, objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, restricted):
 
-        num_artificial_vars = sum(1 for x in rel_coeffs if x != "<=")
+        num_artificial_vars = sum(1 for x in rel_coeffs if x != "≤")
         num_slack_vars = sum(1 for x in rel_coeffs if x != "=")
         num_unrestricted_variables = sum(1 for val in restricted if not val)
 
@@ -53,7 +53,7 @@ class BigMSolver(LPSolverInterface):
         for i in range(len(rel_coeffs)):
             if rel_coeffs[i] == "=":
                 continue
-            expanded_constraint_coeffs.append([0]*(i)+[(-1 if rel_coeffs[i]=='>=' else 1)]+[0]*(num_constraints-1-i))
+            expanded_constraint_coeffs.append([0]*(i)+[(-1 if rel_coeffs[i]=='≥' else 1)]+[0]*(num_constraints-1-i))
             header_row.append(f"s{slack_var_id}")
 
             slack_var_id += 1
@@ -61,7 +61,7 @@ class BigMSolver(LPSolverInterface):
 
         #Handles artificial vars
         for i in range(len(rel_coeffs)):
-            if rel_coeffs[i] in ["=", ">="]:
+            if rel_coeffs[i] in ["=", "≥"]:
                 expanded_constraint_coeffs.append([0]*(i)+[1]+[0]*(num_constraints-1-i))
                 header_row.append(f"a{artifical_var_id}")
                 artifical_var_id += 1
@@ -70,8 +70,8 @@ class BigMSolver(LPSolverInterface):
         #Handles Basic vars
         artifical_var_id = slack_var_id = 1
         for rel in rel_coeffs:
-            self.basic_vars.append(f"a{artifical_var_id}" if rel in ["=", ">="] else f"s{slack_var_id}")
-            if rel in ["=", ">="]:
+            self.basic_vars.append(f"a{artifical_var_id}" if rel in ["=", "≥"] else f"s{slack_var_id}")
+            if rel in ["=", "≥"]:
                 artifical_var_id += 1
             else:
                 slack_var_id += 1
