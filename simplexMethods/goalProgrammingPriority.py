@@ -1,7 +1,13 @@
 import pandas as pd
 import sympy as sp
 from .LpInterface import LPSolverInterface
-from .simplex import SimplexSolver
+import sys
+
+
+
+
+
+LARGE_NUMBER = sys.float_info.max
 
 
 class GoalProgrammingPrioritySolver(LPSolverInterface):
@@ -108,7 +114,7 @@ class GoalProgrammingPrioritySolver(LPSolverInterface):
 
     def solve(self, maximize, tableau_df):
         if tableau_df is None:
-            return None, self.steps, None
+            return "Couldn't form tableau", self.steps
 
         tableau = sp.Matrix(tableau_df.values)
         self.var_names = list(tableau_df.columns)
@@ -159,12 +165,21 @@ class GoalProgrammingPrioritySolver(LPSolverInterface):
                     break
 
                 # Find pivot row using min-ratio test
-                ratios = [sp.oo] * basic_variables_number
+                ratios = [LARGE_NUMBER] * basic_variables_number
                 for i in range(basic_variables_number):
-                    if numeric_tableau[i, pivot_col] >= 0:
-                        ratios[i] = numeric_tableau[i, -1] / numeric_tableau[i, pivot_col]
+                    denominator = numeric_tableau[i, pivot_col]
+                    numerator = numeric_tableau[i, -1]
 
-                pivot_row = min(range(len(ratios)), key=lambda r: ratios[r])
+                    if denominator > 0 and numerator >= 0:
+                        ratios[i] = numerator / denominator
+
+                # Find the row with the smallest ratio, avoiding invalid values
+                valid_rows = [r for r in range(len(ratios)) if ratios[r] != 1e10]
+
+                pivot_row = min(valid_rows, key=lambda r: ratios[r])
+
+                if pivot_row is None:
+                    return "No valid pivot row found. The problem may be unbounded.", self.steps
 
                 # If the pivot row affects a previously optimized Zk, skip
                 if any(numeric_tableau[k + basic_variables_number, pivot_col] < 0 for k in range(j)):
@@ -190,7 +205,7 @@ class GoalProgrammingPrioritySolver(LPSolverInterface):
                     columns=self.var_names
                 ))
 
-        return False, self.steps
+        return None, self.steps
 
 
 # solver = GoalProgrammingPrioritySolver()

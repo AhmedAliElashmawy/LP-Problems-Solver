@@ -56,8 +56,7 @@ class SimplexSolver(LPSolverInterface):
 
     def solve(self, maximize, tableau_df):
         if tableau_df is None:
-            print("Unsolvable with simplex")
-            return None, self.steps, None
+            return "Unsolvable with simplex", self.steps
 
         tableau = tableau_df.to_numpy()
         self.var_names = list(tableau_df.columns)
@@ -75,8 +74,7 @@ class SimplexSolver(LPSolverInterface):
         # Detect infeasibility
         for i in range(tableau.shape[0] - 1):
             if tableau[i, -1] < 0 and np.all(tableau[i, :-1] <= 0):
-                print("Infeasible solution detected.")
-                return True, self.steps
+                return "Infeasible solution detected.", self.steps
 
         while np.any(tableau[-1, :-1] < 0 if maximize else tableau[-1, :-1] > 0):
             pivot_col = np.argmin(tableau[-1, :-1]) if maximize else np.argmax(tableau[-1, :-1])
@@ -91,8 +89,7 @@ class SimplexSolver(LPSolverInterface):
 
             # Detect unbounded
             if pivot_row is None:
-                print("Unbounded solution detected.")
-                return True, self.steps
+                return "Unbounded solution detected.", self.steps
 
             self.basic_vars[pivot_row] = self.var_names[pivot_col]
             tableau[pivot_row] /= tableau[pivot_row, pivot_col]
@@ -108,5 +105,5 @@ class SimplexSolver(LPSolverInterface):
             new_rhs = dict(zip(self.basic_vars, tableau[:-1, -1]))
             self.answer = tuple(new_rhs.get(var, 0) for var in self.var_names if var.startswith("x"))
 
-        return False, self.steps
+        return None, self.steps
 

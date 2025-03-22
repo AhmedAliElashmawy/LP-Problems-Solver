@@ -95,3 +95,24 @@ class LPSolver:
 # Restricted variables flags: []
 # Priority values: [0, 1, 2, 3]
 
+# priority_solver = LPSolver()
+# maximize_flag = False
+# objective_coeffs = []  # Define objective coefficients properly
+# constraint_coeffs = [
+#     [200.0, 0.0],
+#     [100.0, 400.0],
+#     [0.0, 250.0],
+#     [1500.0, 3000.0]
+# ]
+# rhs_values = [1000.0, 1200.0, 800.0, 15000.0]
+# rel_coeffs = ['≥', '≥', '≥', '≤']
+# goals = [1, 2, 3, 4]  # Make sure this is passed properly
+#
+# error, steps = priority_solver.goal_programming_with_priority_levels(
+#     maximize_flag, objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, goals
+# )
+#
+# print("\nPriority-Based Goal Programming Error:", error)
+# for step in steps:
+#     print(step)
+#
