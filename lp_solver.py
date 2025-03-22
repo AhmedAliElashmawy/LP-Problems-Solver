@@ -46,21 +46,31 @@ class LPSolver:
 # x2-  0.0 -1.0  1.0  -5.0  1.0    5.0
 # Z    0.0  0.0  0.0  10.0  4.0  170.0
 
-# # ========== PRIORITY-BASED SOLVER USAGE ==========
-# priority_solver = LPSolver()
-# objective_coeffs = None
-# constraint_coeffs = [
-#     [7, 3],
-#     [10, 5],
-#     [5, 4],
-#     [100, 60]
-# ]
-# rhs_values = [40, 60, 35, 600]
-# rel_coeffs = [">=", ">=", ">=", "<="]
-# goals = [1, 2, 3, 4]
+# ========== PRIORITY-BASED SOLVER USAGE ==========
+priority_solver = LPSolver()
+objective_coeffs = None
+constraint_coeffs = [
+    [7, 3],
+    [10, 5],
+    [5, 4],
+    [100, 60]
+]
+rhs_values = [40, 60, 35, 600]
+rel_coeffs = ["≥", "≥", "≥", "≤"]
+goals = [1, 2, 3, 4]
 
-# error, steps = priority_solver.goal_programming_with_priority_values(False, objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, goals)
-# print("\nPriority-Based Goal Programming Error:", error)
-# for step in steps:
-#     print(step)
+error, steps = priority_solver.goal_programming_with_priority_levels(False, objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, goals)
+print("\nPriority-Based Goal Programming Error:", error)
+for step in steps:
+    print(step)
+
+#      x1 x2      d1+      d1-    d2+ d2-    d3+ d3-        d4+         d4-      RHS
+# x1   1  0     -1/2      1/2      0   0      0   0       1/40       -1/40        5
+# d2-  0  0      5/6     -5/6     -1   1      0   0       1/24       -1/24      5/3
+# d3-  0  0     -5/6      5/6      0   0     -1   1     13/120     -13/120     10/3
+# x2   0  1      5/6     -5/6      0   0      0   0     -7/120       7/120      5/3
+# Z1   0  0      -P1      -P1      0   0      0   0          0           0        0
+# Z2   0  0   5*P2/6  -5*P2/6  -2*P2   0      0   0      P2/24      -P2/24   5*P2/3
+# Z3   0  0  -5*P3/6   5*P3/6      0   0  -2*P3   0  13*P3/120  -13*P3/120  10*P3/3
+# Z4   0  0        0        0      0   0      0   0        -P4         -P4        0
 

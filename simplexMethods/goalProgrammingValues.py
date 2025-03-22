@@ -72,11 +72,11 @@ class GoalProgrammingValueSolver(LPSolverInterface):
                         expanded_constraint_coeffs[j].append(0)
 
                 # Add to objective function
-                if rel_coeffs[i] == "<=":
+                if rel_coeffs[i] == "≤":
                     expanded_objective_coeffs.append(goals[i])  # d+ contributes positively
                     expanded_objective_coeffs.append(0)
 
-                elif rel_coeffs[i] == ">=":
+                elif rel_coeffs[i] == "≥":
                     expanded_objective_coeffs.append(0)
                     expanded_objective_coeffs.append(goals[i])  # d- contributes negatively
 

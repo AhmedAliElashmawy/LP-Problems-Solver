@@ -80,9 +80,9 @@ class GoalProgrammingPrioritySolver(LPSolverInterface):
         for i in range(len(goals)):
             for j in range(len(deviation_indices)):
                 if goals[i] != 0 and i == deviation_indices[j][0]:
-                    if rel_coeffs[i] == "<=":
+                    if rel_coeffs[i] == "≤":
                         tableau[num_constraints + priority_map[goals[i]] - 1, deviation_indices[j][1]] = -sp.Symbol(f"P{goals[i]}")
-                    elif rel_coeffs[i] == ">=":
+                    elif rel_coeffs[i] == "≥":
                         tableau[num_constraints + priority_map[goals[i]] - 1, deviation_indices[j][1] + 1] = -sp.Symbol(f"P{goals[i]}")
                     else:
                         tableau[num_constraints + priority_map[goals[i]] - 1, deviation_indices[j][1]] = -sp.Symbol(f"P{goals[i]}")

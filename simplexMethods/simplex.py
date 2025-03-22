@@ -11,7 +11,7 @@ class SimplexSolver(LPSolverInterface):
         self.answer = None
 
     def create_tableau(self, objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, restricted):
-        if ">=" in rel_coeffs or "=" in rel_coeffs:
+        if "≥" in rel_coeffs or "=" in rel_coeffs:
             print("Simplex isn't the right method!")
             return None
 
@@ -69,8 +69,8 @@ class SimplexSolver(LPSolverInterface):
             if tableau[-1][col_index] != 0:
                 factor = tableau[-1][col_index] / tableau[i][col_index]
                 tableau[-1] -= factor * tableau[i]
+                self.steps.append(pd.DataFrame(tableau.copy(), index=self.basic_vars + ["Z"], columns=self.var_names))
 
-        self.steps.append(pd.DataFrame(tableau.copy(), index=self.basic_vars + ["Z"], columns=self.var_names))
 
         # Detect infeasibility
         for i in range(tableau.shape[0] - 1):

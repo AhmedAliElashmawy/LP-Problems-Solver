@@ -88,105 +88,120 @@ class SolutionWindow(QWidget):
         # Add the problem formulation
         self.layout.addWidget(content_widget)
         
-        # Create table for steps
-        table = QTableWidget()
-        table.setFont(QFont("Courier New", 10))
-        table.verticalHeader().setVisible(False)  # Hide row numbers
-        
-        if steps:
-            first_step_lines = steps[0].split('\n')
-            if first_step_lines:
-                # Process headers
-                headers = first_step_lines[0].split()
-                
-                # Set up table with all columns including RHS
-                table.setColumnCount(len(headers) + 1)
-                display_headers = ["---"] + headers  # Create a new list with "---" prepended
-                table.setHorizontalHeaderLabels(display_headers)
-                
-                # Populate table with all steps
-                current_row = 0
-                for step in steps:
-                    lines = [line.strip() for line in step.split('\n') if line.strip()]
-                    data_lines = lines[1:]  # Skip header line
-                    table.setRowCount(table.rowCount() + len(data_lines))
-                    
-                    # Add step data
-                    for line in data_lines:
-                        values = line.split()
-                        if values:  # Only process if we have values
-                            # Fill the shifted columns (all except last value)
-                            for j in range(len(values) - 1):
-                                item = QTableWidgetItem(values[j])
-                                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-                                table.setItem(current_row, j, item)
-                            
-                            # Add the last value as RHS in the last column
-                            if len(values) > 0:
-                                rhs_item = QTableWidgetItem(values[-1])
-                                rhs_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-                                table.setItem(current_row, len(headers), rhs_item)
-                        
-                        current_row += 1
-                    
-                    # Add separator row if not the last step
-                    if step != steps[-1]:
-                        table.setRowCount(table.rowCount() + 1)
-                        for j in range(len(headers) + 1):  # +1 for the extra column
-                            if j == 0:  # First column should display step number
-                                step_number = f"step{steps.index(step) + 1}"
-                                item = QTableWidgetItem(step_number)
-                            else:
-                                item = QTableWidgetItem("---")
-                            item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-                            table.setItem(current_row, j, item)
-                        current_row += 1
-        
-        # Format final answer from the last line of the last step
-        if steps:
-            last_step = steps[-1]
-            last_line = last_step.split('\n')[-1].strip()
-            values = last_line.split()
-            
-            if values:
-                # Extract z value (last value)
-                z_value = values[-1]
-                
-                # Create variable assignments string
-                var_assignments = []
-                for i, header in enumerate(headers[:-1], 1):
-                    if i < len(values):
-                        var_assignments.append(f"{header}={values[i]}")
-                
-                # Format final answer in LaTeX
-                latex_answer = z_value + r" \text{ at } ("
-                latex_assignments = [f"{header}={values[i]}" for i, header in enumerate(headers[:-1], 1) if i < len(values)]
-                latex_answer += ", ".join(latex_assignments) + ")"
-                
-                # Create a single line LaTeX expression for the final answer
-                # Remove the extra '$' signs since render_lp_problem already adds them
-                from .latex_renderer import LatexRenderer
-                answer_pixmap = LatexRenderer.render_lp_problem("", [latex_answer], [])
-
-        # Adjust table properties
-        table.horizontalHeader().setStretchLastSection(True)
-        table.resizeColumnsToContents()
-        table.resizeRowsToContents()
-        
-        # Add everything to main layout in new order
-        if final_answer:
+        # Format and display final answer first
+        if final_answer and steps:
             answer_label = QLabel("Final Answer:")
             answer_label.setFont(QFont("Arial", 11, QFont.Weight.Bold))
             self.layout.addWidget(answer_label)
             
-            # Create label for the LaTeX rendered answer
-            answer_label = QLabel()
-            answer_label.setPixmap(answer_pixmap)
-            answer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.layout.addWidget(answer_label)
+            last_step = steps[-1]
+            last_line = last_step.split('\n')[-1].strip()
+            values = last_line.split()
+            headers = steps[0].split('\n')[0].split()
+            
+            if values:
+                # Create LaTeX answer
+                z_value = values[-1]
+                latex_answer = z_value + r" \text{ at } ("
+                latex_assignments = [f"{header}={values[i]}" for i, header in enumerate(headers[:-1], 1) if i < len(values)]
+                latex_answer += ", ".join(latex_assignments) + ")"
+                
+                from .latex_renderer import LatexRenderer
+                answer_pixmap = LatexRenderer.render_lp_problem("", [latex_answer], [])
+                
+                # Create horizontal scroll area for final answer
+                answer_scroll = QScrollArea()
+                answer_scroll.setFixedHeight(100)  # Fixed vertical height
+                answer_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)  # Disable vertical scroll
+                answer_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)  # Enable horizontal scroll as needed
+                
+                answer_label = QLabel()
+                answer_label.setPixmap(answer_pixmap)
+                answer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                
+                answer_scroll.setWidget(answer_label)
+                self.layout.addWidget(answer_scroll)
+                
+                # Add separator after final answer
+                self.layout.addWidget(self.create_separator())
+                
+        # Create scroll area for tables
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_content = QWidget()
+        scroll_layout = QVBoxLayout(scroll_content)
 
-        self.layout.addWidget(table)
+        # Add a "Solution Steps:" label
+        steps_label = QLabel("Solution Steps:")
+        steps_label.setFont(QFont("Arial", 11, QFont.Weight.Bold))
+        scroll_layout.addWidget(steps_label)
         
+        if steps:
+            first_step_lines = steps[0].split('\n')
+            if first_step_lines:
+                # Process headers once
+                headers = first_step_lines[0].split()
+                
+                # Process each step
+                for step_index, step in enumerate(steps):
+                    # Create step label
+                    step_label = QLabel(f"Step {step_index + 1}:")
+                    step_label.setFont(QFont("Arial", 11, QFont.Weight.Bold))
+                    scroll_layout.addWidget(step_label)
+                    
+                    # Create table for this step
+                    table = QTableWidget()
+                    table.setFont(QFont("Courier New", 12))  # Increased font size
+                    table.verticalHeader().setVisible(False)
+                    table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+                    
+                    # Process step data
+                    lines = [line.strip() for line in step.split('\n') if line.strip()]
+                    data_lines = lines[1:]  # Skip header line
+                    table.setRowCount(len(data_lines))
+                    
+                    # Set dynamic minimum height (40 pixels per row plus header)
+                    row_height = 40
+                    header_height = 32
+                    min_height = ((len(data_lines)) * row_height) + header_height
+                    table.setMinimumHeight(min_height)
+                    
+                    # Set up table columns
+                    table.setColumnCount(len(headers) + 1)
+                    display_headers = ["---"] + headers
+                    table.setHorizontalHeaderLabels(display_headers)
+                    
+                    # Add data to table
+                    for row, line in enumerate(data_lines):
+                        values = line.split()
+                        if values:
+                            # Fill columns
+                            for col in range(len(values) - 1):
+                                item = QTableWidgetItem(values[col])
+                                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                                table.setItem(row, col, item)
+                            
+                            # Add RHS value
+                            if len(values) > 0:
+                                rhs_item = QTableWidgetItem(values[-1])
+                                rhs_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                                table.setItem(row, len(headers), rhs_item)
+                    
+                    # Format table
+                    table.horizontalHeader().setStretchLastSection(True)
+                    for col in range(table.columnCount()):
+                        table.setColumnWidth(col, 100)
+                    
+                    # Add table to scroll layout
+                    scroll_layout.addWidget(table)
+                    
+                    # Add separator if not the last step
+                    if step_index < len(steps) - 1:
+                        scroll_layout.addWidget(self.create_separator())
+
+        scroll_area.setWidget(scroll_content)
+        self.layout.addWidget(scroll_area)
+
         # Add back button
         back_btn = QPushButton("Back to Input")
         back_btn.clicked.connect(self.go_back)

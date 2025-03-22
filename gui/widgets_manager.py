@@ -21,7 +21,6 @@ class WidgetsManager:
         self.parent.non_negative_radio = QRadioButton("All Non-negative")
         self.parent.unrestricted_radio = QRadioButton("Unrestricted")
         self.parent.non_negative_radio.setChecked(True)
-        self.parent.unrestricted_radio.toggled.connect(self.on_restriction_change)
         var_restrictions_layout.addWidget(self.parent.non_negative_radio)
         var_restrictions_layout.addWidget(self.parent.unrestricted_radio)
         var_restrictions_group.setLayout(var_restrictions_layout)
@@ -60,8 +59,6 @@ class WidgetsManager:
         self.parent.create_tables_btn.clicked.connect(self.on_create_tables)
         self.parent.layout.addWidget(self.parent.create_tables_btn)
         
-        # Connect goal programming
-        # self.parent.goal_programming.toggled.connect(self.on_goal_programming_change)
 
     def create_hidden_widgets(self):
         # Objective function
@@ -88,10 +85,18 @@ class WidgetsManager:
         self.parent.var_restrictions_label.hide()
         self.parent.var_restrictions_table.hide()
 
-        # Add priority table (but keep hidden by default)
-        self.parent.layout.addWidget(self.parent.priority_label)
+        # Add priority table with radio button (but keep hidden by default)
+        priority_top_layout = QHBoxLayout()
+        self.parent.priority_label = QLabel("Priority:")
+        self.parent.priority_radio = QRadioButton("Level?")
+        self.parent.priority_radio.setChecked(True)
+        priority_top_layout.addWidget(self.parent.priority_label)
+        priority_top_layout.addWidget(self.parent.priority_radio)
+        priority_top_layout.addStretch()
+        self.parent.layout.addLayout(priority_top_layout)
         self.parent.layout.addWidget(self.parent.priority_table)
         self.parent.priority_label.hide()
+        self.parent.priority_radio.hide()
         self.parent.priority_table.hide()
 
         # Buttons
@@ -112,13 +117,14 @@ class WidgetsManager:
             self.parent.constraint_label, self.parent.constraint_table,
             self.parent.solve_btn, self.parent.clear_btn,
             self.parent.var_restrictions_table, self.parent.var_restrictions_label,
-            self.parent.priority_table, self.parent.priority_label
+            self.parent.priority_table, self.parent.priority_label,
+            self.parent.priority_radio
         ]
         for widget in widgets:
             widget.hide()
 
     def on_create_tables(self):
-        self.parent.resize(800, 800)  # Increased height to accommodate priority table
+        self.parent.resize(800, 800)
         self.parent.center_window()
         self.parent.table_manager.create_tables()
         
@@ -139,9 +145,19 @@ class WidgetsManager:
             self.parent.solve_btn, self.parent.clear_btn
         ]
         for widget in widgets:
+            if(self.parent.goal_programming.isChecked() and (widget == self.parent.min_radio or widget == self.parent.obj_table or widget == self.parent.obj_label)):
+                continue
             widget.show()
-            
         self.parent.create_tables_btn.hide()
+        
+        if self.parent.unrestricted_radio.isChecked():
+            try:
+                vars_count = int(self.parent.var_count.text())
+                self.parent.table_manager.setup_var_restrictions_table(vars_count)
+                self.parent.var_restrictions_table.show()
+                self.parent.var_restrictions_label.show()
+            except ValueError:
+                pass
         
         if self.parent.goal_programming.isChecked():
             try:
@@ -149,8 +165,10 @@ class WidgetsManager:
                 self.parent.table_manager.setup_priority_table(constraints_count)
                 self.parent.priority_table.show()
                 self.parent.priority_label.show()
+                self.parent.priority_radio.show()
             except ValueError:
                 pass
+        self.update_window_size()
 
     def clear_all(self):
         # Clear and reset all widgets
@@ -206,3 +224,43 @@ class WidgetsManager:
         else:
             self.parent.priority_table.hide()
             self.parent.priority_label.hide()
+
+    def update_window_size(self):
+        # Base sizes
+        base_width = 500  
+        base_height = 200  # Reduced base height to prevent extra space
+        print("update_window_size")
+
+        # Dynamic width calculation based on number of variables
+        if hasattr(self.parent, 'obj_table'):
+            num_cols = self.parent.obj_table.columnCount()
+            width = max(base_width, 120 + (num_cols * 90))  # Adjusted column width
+        else:
+            width = base_width
+
+        # Dynamic height calculation based on number of constraints
+        table_spacing = 5  # Reduced space between tables
+        height = base_height
+
+        if hasattr(self.parent, 'obj_table'):
+            height += 60  # Objective function table height
+
+        if hasattr(self.parent, 'constraint_table'):
+            num_rows = self.parent.constraint_table.rowCount()
+            height += (num_rows * 35) + table_spacing  # Reduced row height
+
+        if hasattr(self.parent, 'var_restrictions_table'):
+            height += 50 + table_spacing  # Reduced height for variable restrictions
+
+        if hasattr(self.parent, 'priority_table'):
+            height += 50 + table_spacing  # Reduced height for priority table
+
+        # Extra padding for safety
+        width += 40
+        # height += 30  # Reduced extra height padding
+
+        # Resize and center window
+        self.parent.resize(width, height)
+        self.parent.center_window()
+
+

@@ -109,6 +109,7 @@ class LPSolverGUI(QMainWindow):
         rhs_values = []
         rel_operators = []
         restricted = []
+        priorities = []  # Add priorities list
         
         # Get restriction values from var_restrictions_table
         for col in range(self.obj_table.columnCount()):
@@ -129,6 +130,7 @@ class LPSolverGUI(QMainWindow):
             # Get RHS value
             rhs_values.append(float(c[-1]))
             
+            
             # Continue with LaTeX formatting
             terms = []
             for i, coef in enumerate(coeffs):
@@ -143,6 +145,13 @@ class LPSolverGUI(QMainWindow):
             operator = c[-2].replace("<=", r"\leq").replace(">=", r"\geq")
             constraint_str = f"{' + '.join(terms)} {operator} {c[-1]}"
             latex_constraints.append(constraint_str)
+
+        # Get priority from priority column if it exists
+        for col in range(self.priority_table.columnCount()):
+            priority_widget = self.priority_table.cellWidget(0, col)  # Assuming priorities are in the first row
+            if priority_widget and isinstance(priority_widget, QLineEdit):
+                priority = int(priority_widget.text() or "1")  # Default to 1 if empty
+                priorities.append(priority)
 
         # Convert objective coefficients to float
         obj_coeffs = [float(coef) for coef in obj_coeffs]
@@ -169,26 +178,41 @@ class LPSolverGUI(QMainWindow):
         print("RHS values:", rhs_values)
         print("Relation operators:", rel_operators)
         print("Restricted variables flags:", restricted)
+        print("Priority values:", priorities)
 
         # Call solver with all parameters
         solver = LPSolver()
-        # error, steps = solver.simplex(
-        #     not self.min_radio.isChecked(),  # maximize flag
-        #     obj_coeffs,                      # objective coefficients
-        #     constraint_coeffs,               # constraint coefficients matrix
-        #     rhs_values,                      # right-hand side values
-        #     rel_operators,                   # relation operators
-        #     restricted                       # restricted variables flags
-        # )
-        error, steps = solver.goal_programming_with_priority_values(
-            not self.min_radio.isChecked(),  # maximize flag
-            obj_coeffs,                      # objective coefficients
-            constraint_coeffs,               # constraint coefficients matrix
-            rhs_values,                      # right-hand side values
-            rel_operators,                   # relation operators
-            [1, 2, 3, 4]                    # priority values
-        )
-
+        match method:
+            case "Simplex":
+                error, steps = solver.simplex(
+                    not self.min_radio.isChecked(),  # maximize flag
+                    obj_coeffs,                      # objective coefficients
+                    constraint_coeffs,               # constraint coefficients matrix
+                    rhs_values,                      # right-hand side values
+                    rel_operators,                   # relation operators
+                    restricted                       # restricted variables flags
+                )
+            case "Goal Programming":
+                if(self.priority_radio.isChecked()):
+                    error, steps = solver.goal_programming_with_priority_levels(
+                        False,  # maximize flag
+                        None,                      # objective coefficients
+                        constraint_coeffs,               # constraint coefficients matrix
+                        rhs_values,                      # right-hand side values
+                        rel_operators,                   # relation operators
+                        priorities                       # priority values from GUI
+                    )
+                else:
+                    error, steps = solver.goal_programming_with_priority_values(
+                        False,  # maximize flag
+                        None,                      # objective coefficients
+                        constraint_coeffs,               # constraint coefficients matrix
+                        rhs_values,                      # right-hand side values
+                        rel_operators,                   # relation operators
+                        priorities                       # priority values from GUI
+                    )
+            case _:
+                print("Unsupported method:", method)
         # Convert DataFrame steps to string representation
         string_steps = []
         for step in steps:
