@@ -70,4 +70,30 @@ def setup_styles(window):
         color: #D0D0D0;
         font-weight: bold;
     }
+    QTableWidget {
+        background-color: #1C1C1C;
+        gridline-color: #3A3A3A;
+        border: 1px solid #3A3A3A;
+        border-radius: 6px;
+        margin: 10px;
+    }
+    QTableWidget::item {
+        padding: 5px;
+        # color: #E0E0E0;
+        border: none;
+    }
+    QTableWidget QHeaderView::section {
+        # background-color: #252526;
+        # color: #E0E0E0;
+        padding: 5px;
+        border: 1px solid #3A3A3A;
+    }
+    QTableWidget QLineEdit, QTableWidget QComboBox {
+        margin: 1px;
+        min-height: 24px;
+    }
+    QTableWidget::item:selected {
+        background-color: #007ACC;
+    }
+    
     """)

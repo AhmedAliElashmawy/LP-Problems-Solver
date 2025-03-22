@@ -4,7 +4,7 @@ from .LpInterface import LPSolverInterface
 from .simplex import SimplexSolver
 
 
-class GoalProgrammingSolver(LPSolverInterface):
+class GoalProgrammingValueSolver(LPSolverInterface):
     def __init__(self):
         self.basic_vars = []
         self.var_names = []
@@ -72,11 +72,11 @@ class GoalProgrammingSolver(LPSolverInterface):
                         expanded_constraint_coeffs[j].append(0)
 
                 # Add to objective function
-                if rel_coeffs[i] == "<=":
+                if rel_coeffs[i] == "≤":
                     expanded_objective_coeffs.append(goals[i])  # d+ contributes positively
                     expanded_objective_coeffs.append(0)
 
-                elif rel_coeffs[i] == ">=":
+                elif rel_coeffs[i] == "≥":
                     expanded_objective_coeffs.append(0)
                     expanded_objective_coeffs.append(goals[i])  # d- contributes negatively
 

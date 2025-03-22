@@ -11,7 +11,7 @@ class SimplexSolver(LPSolverInterface):
         self.answer = None
 
     def create_tableau(self, objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, restricted):
-        if ">=" in rel_coeffs or "=" in rel_coeffs:
+        if "≥" in rel_coeffs or "=" in rel_coeffs:
             print("Simplex isn't the right method!")
             return None
 
@@ -69,14 +69,14 @@ class SimplexSolver(LPSolverInterface):
             if tableau[-1][col_index] != 0:
                 factor = tableau[-1][col_index] / tableau[i][col_index]
                 tableau[-1] -= factor * tableau[i]
+                self.steps.append(pd.DataFrame(tableau.copy(), index=self.basic_vars + ["Z"], columns=self.var_names))
 
-        self.steps.append(pd.DataFrame(tableau.copy(), index=self.basic_vars + ["Z"], columns=self.var_names))
 
         # Detect infeasibility
         for i in range(tableau.shape[0] - 1):
             if tableau[i, -1] < 0 and np.all(tableau[i, :-1] <= 0):
                 print("Infeasible solution detected.")
-                return None, self.steps, None
+                return True, self.steps
 
         while np.any(tableau[-1, :-1] < 0 if maximize else tableau[-1, :-1] > 0):
             pivot_col = np.argmin(tableau[-1, :-1]) if maximize else np.argmax(tableau[-1, :-1])
@@ -92,7 +92,7 @@ class SimplexSolver(LPSolverInterface):
             # Detect unbounded
             if pivot_row is None:
                 print("Unbounded solution detected.")
-                return None, self.steps, None
+                return True, self.steps
 
             self.basic_vars[pivot_row] = self.var_names[pivot_col]
             tableau[pivot_row] /= tableau[pivot_row, pivot_col]
@@ -108,4 +108,5 @@ class SimplexSolver(LPSolverInterface):
             new_rhs = dict(zip(self.basic_vars, tableau[:-1, -1]))
             self.answer = tuple(new_rhs.get(var, 0) for var in self.var_names if var.startswith("x"))
 
-        return tableau[-1, -1] * (1 if maximize else -1), self.steps, self.answer
+        return False, self.steps
+
