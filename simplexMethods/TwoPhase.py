@@ -122,7 +122,8 @@ class TwoPhaseSolver(LPSolverInterface):
                     ratios.append((tableau[i, -1] / tableau[i, pivot_col], i))
 
             if not ratios:
-                raise ValueError("Phase 1: Unbounded solution")
+                print("Phase 1: Unbounded solution")
+                return True , tableau
 
             pivot_row = min(ratios, key=lambda x: x[0])[1]
             pivot_element = tableau[pivot_row, pivot_col]
@@ -141,9 +142,10 @@ class TwoPhaseSolver(LPSolverInterface):
 
         # Check feasibility
         if abs(tableau[-1, -1]) > 1e-10:
-            return None  # Problem is infeasible
+            print("Infeasible in Phase I")
+            return True , tableau  # Problem is infeasible
 
-        return tableau
+        return False , tableau
 
     def __phase_two(self, maximize, tableau):
         """
@@ -186,7 +188,8 @@ class TwoPhaseSolver(LPSolverInterface):
                     ratios.append((tableau[i, -1] / tableau[i, pivot_col], i))
 
             if not ratios:
-                return None  # Unbounded solution
+                print("Unbounded Solution in Phase II")
+                return True , tableau
 
             pivot_row = min(ratios, key=lambda x: x[0])[1]
             pivot_element = tableau[pivot_row, pivot_col]
@@ -209,7 +212,7 @@ class TwoPhaseSolver(LPSolverInterface):
             if basic_var in self.answer:
                 self.answer[basic_var] = tableau[i, -1]
 
-        return tableau
+        return False, tableau
 
     def solve(self, maximize, tableau_df):
         if tableau_df is None:
@@ -223,12 +226,15 @@ class TwoPhaseSolver(LPSolverInterface):
         self.steps.append(tableau_df.copy())
 
         # Phase 1: Minimize the sum of artificial variables
-        tableau = self.__phase_one(tableau)
+        error, tableau = self.__phase_one(tableau)
+
+        if(error==True):
+            return error , self.steps
 
         #Phase 2 :
-        tableau = self.__phase_two(maximize , tableau)
+        error , tableau = self.__phase_two(maximize , tableau)
 
-        return tableau[-1, -1] * (1 if maximize else -1), self.steps, self.answer
+        return error , self.steps
 
 
 

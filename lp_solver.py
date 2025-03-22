@@ -3,11 +3,14 @@ import pandas as pd
 from simplexMethods.simplex import SimplexSolver
 from simplexMethods.goalProgrammingValues import GoalProgrammingValueSolver
 from simplexMethods.goalProgrammingPriority import GoalProgrammingPrioritySolver
-
+from simplexMethods.bigM import BigMSolver
+from simplexMethods.TwoPhase import TwoPhaseSolver
 
 class LPSolver:
     def __init__(self):
         self.simplex_solver = SimplexSolver()
+        self.big_M = BigMSolver()
+        self.two_phase = TwoPhaseSolver()
         self.goal_programming_value_solver = GoalProgrammingValueSolver()
         self.goal_programming_priority_solver = GoalProgrammingPrioritySolver()
 
@@ -15,6 +18,17 @@ class LPSolver:
         tableau = self.simplex_solver.create_tableau(objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, restricted)
         error, steps = self.simplex_solver.solve(maximize, tableau)
         return error, steps
+
+    def big_M(self, maximize, objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, restricted):
+        tableu = self.big_M.create_tableau(objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, restricted)
+        error, steps = self.big_M.solve(maximize , tableu)
+        return error , steps
+
+    def two_phase(self, maximize, objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, restricted):
+        tableu = self.two_phase.create_tableau(objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, restricted)
+        error, steps = self.two_phase.solve(maximize , tableu)
+        return error , steps
+
 
     def goal_programming_with_priority_values(self, maximize, objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, goals):
         tableau = self.goal_programming_value_solver.create_tableau(objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, goals)
