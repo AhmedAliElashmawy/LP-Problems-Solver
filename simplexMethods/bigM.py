@@ -166,39 +166,3 @@ class BigMSolver(LPSolverInterface):
 
 
 
-
-
-
-if __name__ == "__main__":
-    solver = BigMSolver()
-
-    # Maximize z = 3x1 + 5x2
-    objective_coeffs = [-1, -2 , -1]
-
-    # Constraints:
-    # x1 + 2x2  = 4
-    # 4x1 + 3x2 >= 6
-    constraint_coeffs = [
-        [1, 1 , 1],
-        [2 , -5 , 1],
-    ]
-    rhs_values = [7 , 10]
-    rel_coeffs = ["=" , '>=']
-    restricted = [True, True , True]  # Both x1 and x2 are non-negative
-
-    tableau_df = solver.create_tableau(objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, restricted)
-    print("Initial Tableau:")
-    print(tableau_df)
-
-
-    optimal_value, steps, solution = solver.solve(maximize=True, tableau_df=tableau_df)
-
-    print("\nOptimal Value:", optimal_value)
-    print("Solution:", solution)
-    print("\nSteps:")
-    for step in steps:
-        print(step, "\n")
-
-
-
-
