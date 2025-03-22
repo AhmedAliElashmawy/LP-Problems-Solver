@@ -38,14 +38,14 @@ class BigMSolver(LPSolverInterface):
         for i in range(num_variables):
             if restricted[i]:
                 expanded_constraint_coeffs.append([row[i] for row in constraint_coeffs])
-                expanded_obj_coeffs.append(objective_coeffs[i])
+                expanded_obj_coeffs.append(-objective_coeffs[i])
                 header_row.append(f"x{restricted_var_id}")
                 restricted_var_id += 1
             else:
                 expanded_constraint_coeffs.append([row[i] for row in constraint_coeffs])
                 expanded_constraint_coeffs.append([-row[i] for row in constraint_coeffs])
-                expanded_obj_coeffs.append(objective_coeffs[i])
                 expanded_obj_coeffs.append(-objective_coeffs[i])
+                expanded_obj_coeffs.append(objective_coeffs[i])
                 header_row.extend([f"y{unrestricted_var_id}+" , f"y{unrestricted_var_id}-"])
                 unrestricted_var_id += 1
 

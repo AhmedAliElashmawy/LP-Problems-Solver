@@ -36,14 +36,14 @@ class TwoPhaseSolver(LPSolverInterface):
         for i in range(num_variables):
             if restricted[i]:
                 expanded_constraint_coeffs.append([row[i] for row in constraint_coeffs])
-                expanded_phase_two_coeffs.append(objective_coeffs[i])  # Phase 2 objective
+                expanded_phase_two_coeffs.append(-objective_coeffs[i])  # Phase 2 objective
                 header_row.append(f"x{unrestricted_var_id}")
                 unrestricted_var_id += 1
             else:
                 expanded_constraint_coeffs.append([row[i] for row in constraint_coeffs])
                 expanded_constraint_coeffs.append([-row[i] for row in constraint_coeffs])
-                expanded_phase_two_coeffs.append(objective_coeffs[i])  # Phase 2 objective
-                expanded_phase_two_coeffs.append(-objective_coeffs[i])  # Phase 2 objective (negative for unrestricted)
+                expanded_phase_two_coeffs.append(-objective_coeffs[i])  # Phase 2 objective
+                expanded_phase_two_coeffs.append(objective_coeffs[i])  # Phase 2 objective (negative for unrestricted)
                 header_row.extend([f"y{unrestricted_var_id}+", f"y{unrestricted_var_id}-"])
                 unrestricted_var_id += 1
 
