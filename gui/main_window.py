@@ -171,7 +171,8 @@ class LPSolverGUI(QMainWindow):
         math_pixmap = LatexRenderer.render_lp_problem(
             problem_type.lower(),
             obj_terms,
-            latex_constraints
+            latex_constraints,
+            self.priority_radio.isChecked(),
         )
         math_label.setPixmap(math_pixmap)
         math_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -254,7 +255,10 @@ class LPSolverGUI(QMainWindow):
         
         self.hide()
         if self.twophase_radio.isChecked():
-            self.solution_window.display_native_solution(content_widget, string_steps, final_answer, True)
+            self.solution_window.display_native_solution(content_widget, string_steps, final_answer, True, False)
+        elif self.goal_programming.isChecked():
+            print(self.priority_table.columnCount())
+            self.solution_window.display_native_solution(content_widget, string_steps, final_answer, False, True, self.priority_table.columnCount())
         else:
             self.solution_window.display_native_solution(content_widget, string_steps, final_answer)
         self.solution_window.show()

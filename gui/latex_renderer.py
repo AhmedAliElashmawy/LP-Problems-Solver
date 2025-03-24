@@ -5,11 +5,15 @@ import io
 
 class LatexRenderer:
     @staticmethod
-    def render_lp_problem(problem_type, obj_terms, constraints):
+    def render_lp_problem(problem_type, obj_terms, constraints, is_goalprogramming=False, goals=0):
         # Build the objective string.
         objective = " + ".join(obj_terms)
         # Remove "subject to" if there are no constraints
-        if not constraints:
+        if is_goalprogramming and not constraints:
+            header = r"$\text{" + problem_type.capitalize() + r"}\quad Z_{" + str(goals) + r"} = " + objective + r"$"
+        elif is_goalprogramming:
+            header = r"$\text{" + problem_type.capitalize() + r"}\quad Z " + objective + r"\quad \text{subject to:}$"
+        elif not constraints:
             header = r"$\text{" + problem_type.capitalize() + r"}\quad Z = " + objective + r"$"
         else:
             header = r"$\text{" + problem_type.capitalize() + r"}\quad Z = " + objective + r"\quad \text{subject to:}$"

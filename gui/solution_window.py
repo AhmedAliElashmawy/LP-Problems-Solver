@@ -5,6 +5,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from io import StringIO
 import pandas as pd
+from .latex_renderer import LatexRenderer
 
 class SolutionWindow(QWidget):
     def __init__(self, parent=None):
@@ -16,6 +17,55 @@ class SolutionWindow(QWidget):
     def init_ui(self):
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #1C1C1C;
+                color: #D0D0D0;
+            }
+            QLabel {
+                color: #D0D0D0;
+                font-weight: bold;
+            }
+            QScrollArea {
+                border: 1px solid #2A2A2A;
+                border-radius: 8px;
+                background-color: #1C1C1C;
+            }
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #007ACC, stop:1 #005A9E);
+                color: white;
+                border: 1px solid #004C8C;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background: #008CFF;
+                border: 1px solid #006BB3;
+            }
+            QPushButton:pressed {
+                background: #005A9E;
+            }
+            QTableWidget {
+                background-color: #1C1C1C;
+                gridline-color: #3A3A3A;
+                border: 1px solid #3A3A3A;
+                border-radius: 6px;
+            }
+            QTableWidget::item {
+                padding: 5px;
+                color: #E0E0E0;
+            }
+            QTableWidget QHeaderView::section {
+                background-color: #252526;
+                color: #E0E0E0;
+                padding: 5px;
+                border: 1px solid #3A3A3A;
+            }
+            QFrame[frameShape="4"] {
+                color: #3A3A3A;
+            }
+        """)
 
         # Create scrollable area for solution steps
         self.scroll = QScrollArea()
@@ -80,7 +130,7 @@ class SolutionWindow(QWidget):
         
         self.answer_content.setText(final_answer)
 
-    def display_native_solution(self, content_widget, steps, final_answer, is_twophase=False):
+    def display_native_solution(self, content_widget, steps, final_answer, is_twophase=False, is_goalprogramming=False, NumGoals=0):
         # Clear previous content
         for i in reversed(range(self.layout.count())): 
             self.layout.itemAt(i).widget().setParent(None)
@@ -95,35 +145,27 @@ class SolutionWindow(QWidget):
             self.layout.addWidget(answer_label)
             
             last_step = steps[-1]
-            first_column = [line.split()[0] for line in last_step.split('\n')[1:-1]]
-            last_column = [line.split()[-1] for line in last_step.split('\n')[1:]]
+            if(is_goalprogramming):
+                first_column = [line.split()[0] for line in last_step.split('\n')[1:len(last_step.split('\n'))-NumGoals]]
+                last_column = [line.split()[-1] for line in last_step.split('\n')[1:]]
+                for i in range(NumGoals):
+                    z_value = last_column[-1-i]
+                    latex_answer = z_value + r" \text{ at } ("
+                    latex_assignments = [f"{first_column[i]} = {last_column[i]}" for i in range(len(first_column))]
+                    latex_answer += ", ".join(latex_assignments) + ")"
+                    self.latex(latex_answer, True, NumGoals-i)
+            else:
+                first_column = [line.split()[0] for line in last_step.split('\n')[1:-1]]
+                last_column = [line.split()[-1] for line in last_step.split('\n')[1:]]
+                z_value = last_column[-1]
+                # Extract all variable assignments from the last step
+                latex_answer = z_value + r" \text{ at } ("
+                latex_assignments = [f"{first_column[i]} = {last_column[i]}" for i in range(len(first_column))]
+                latex_answer += ", ".join(latex_assignments) + ")"
+                self.latex(latex_answer)
             print(first_column, last_column)
-            # Create LaTeX answer
-            z_value = last_column[-1]
-            # Extract all variable assignments from the last step
-            latex_answer = z_value + r" \text{ at } ("
-            latex_assignments = [f"{first_column[i]} = {last_column[i]}" for i in range(len(first_column))]
-            latex_answer += ", ".join(latex_assignments) + ")"
             
-            from .latex_renderer import LatexRenderer
-            answer_pixmap = LatexRenderer.render_lp_problem("", [latex_answer], [])
             
-            # Create horizontal scroll area for final answer
-            answer_scroll = QScrollArea()
-            answer_scroll.setFixedHeight(100)  # Fixed vertical height
-            answer_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)  # Disable vertical scroll
-            answer_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)  # Enable horizontal scroll as needed
-            
-            answer_label = QLabel()
-            answer_label.setPixmap(answer_pixmap)
-            answer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            
-            answer_scroll.setWidget(answer_label)
-            self.layout.addWidget(answer_scroll)
-            
-            # Add separator after final answer
-            self.layout.addWidget(self.create_separator())
-                
         # Create scroll area for tables
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
@@ -235,6 +277,25 @@ class SolutionWindow(QWidget):
         back_btn = QPushButton("Back to Input")
         back_btn.clicked.connect(self.go_back)
         self.layout.addWidget(back_btn)
+
+    def latex(self, latex_answer, is_goalprogramming=False, goal_number=0):
+        answer_pixmap = LatexRenderer.render_lp_problem("", [latex_answer], [], is_goalprogramming, goal_number)
+            
+            # Create horizontal scroll area for final answer
+        answer_scroll = QScrollArea()
+        answer_scroll.setFixedHeight(60)  # Fixed vertical height
+        answer_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)  # Disable vertical scroll
+        answer_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)  # Enable horizontal scroll as needed
+            
+        answer_label = QLabel()
+        answer_label.setPixmap(answer_pixmap)
+        answer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            
+        answer_scroll.setWidget(answer_label)
+        self.layout.addWidget(answer_scroll)
+            
+            # Add separator after final answer
+        self.layout.addWidget(self.create_separator())
 
     def go_back(self):
         self.hide()

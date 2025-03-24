@@ -1,5 +1,9 @@
 from PyQt6.QtWidgets import QTableWidgetItem, QComboBox, QLineEdit
 from PyQt6.QtCore import Qt
+try:
+    from .styles import setup_styles
+except ImportError:
+    from styles import setup_styles  # Adjust for absolute import if relative fails
 
 class TableManager:
     def __init__(self, parent):
