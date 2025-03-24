@@ -95,5 +95,32 @@ def setup_styles(window):
     QTableWidget::item:selected {
         background-color: #007ACC;
     }
-    
+    QMessageBox {
+        background-color: #1C1C1C;
+        color: #D0D0D0;
+        min-width: 400px;
+        min-height: 150px;
+    }
+    QMessageBox QLabel {
+        color: #D0D0D0;
+        font-size: 14px;
+        padding: 20px;
+        min-width: 300px;
+    }
+    QMessageBox QPushButton {
+        min-width: 100px;
+        min-height: 30px;
+        background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #007ACC, stop:1 #005A9E);
+        color: white;
+        border: 1px solid #004C8C;
+        border-radius: 4px;
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+    QMessageBox QPushButton:hover {
+        background: #008CFF;
+    }
+    QMessageBox QPushButton:pressed {
+        background: #005A9E;
+    }
     """)

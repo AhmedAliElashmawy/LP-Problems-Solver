@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QApplication, 
-                           QLineEdit, QComboBox, QLabel, QFrame, QHBoxLayout)
+                           QLineEdit, QComboBox, QLabel, QFrame, QHBoxLayout, QMessageBox)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from .styles import setup_styles
@@ -8,6 +8,9 @@ from .widgets_manager import WidgetsManager
 from .solution_window import SolutionWindow
 from .latex_renderer import LatexRenderer
 from lp_solver import LPSolver
+import sys
+
+LARGE_NUMBER = sys.maxsize
 
 class MathLabel(QLabel):
     def __init__(self, text="", parent=None):
@@ -150,7 +153,10 @@ class LPSolverGUI(QMainWindow):
         for col in range(self.priority_table.columnCount()):
             priority_widget = self.priority_table.cellWidget(0, col)  # Assuming priorities are in the first row
             if priority_widget and isinstance(priority_widget, QLineEdit):
-                priority = (int(priority_widget.text()) or 0)  # Convert to int or None
+                if self.priority_radio.isChecked():
+                    priority = int(priority_widget.text()) or len(priorities) + 1
+                else:
+                    priority = (int(priority_widget.text()) or 0)  # Convert to int or None
                 priorities.append(priority)
 
         # Convert objective coefficients to float
@@ -208,7 +214,7 @@ class LPSolverGUI(QMainWindow):
                     constraint_coeffs,               # constraint coefficients matrix
                     rhs_values,                      # right-hand side values
                     rel_operators,                   # relation operators
-                    restricted                       # restricted variables flags
+                    restricted,                       # restricted variables flags
                 )
             case "Goal Programming":
                 if(self.priority_radio.isChecked()):
@@ -231,6 +237,11 @@ class LPSolverGUI(QMainWindow):
                     )
             case _:
                 print("Unsupported method:", method)
+        if error:
+            print("Error:", error)
+            msg_box = QMessageBox(QMessageBox.Icon.Critical, "Error", error)
+            msg_box.exec()
+            return
         # Convert DataFrame steps to string representation
         string_steps = []
         for step in steps:
@@ -242,7 +253,10 @@ class LPSolverGUI(QMainWindow):
         final_answer = "Final answer goes here"
         
         self.hide()
-        self.solution_window.display_native_solution(content_widget, string_steps, final_answer)
+        if self.twophase_radio.isChecked():
+            self.solution_window.display_native_solution(content_widget, string_steps, final_answer, True)
+        else:
+            self.solution_window.display_native_solution(content_widget, string_steps, final_answer)
         self.solution_window.show()
         self.solution_window.raise_()
         self.solution_window.activateWindow()

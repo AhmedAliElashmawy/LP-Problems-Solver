@@ -123,7 +123,7 @@ class TwoPhaseSolver(LPSolverInterface):
 
             if not ratios:
                 print("Phase 1: Unbounded solution")
-                return True , tableau
+                return "Phase 1: Unbounded solution" , tableau
 
             pivot_row = min(ratios, key=lambda x: x[0])[1]
             pivot_element = tableau[pivot_row, pivot_col]
@@ -143,7 +143,7 @@ class TwoPhaseSolver(LPSolverInterface):
         # Check feasibility
         if abs(tableau[-1, -1]) > 1e-10:
             print("Infeasible in Phase I")
-            return True , tableau  # Problem is infeasible
+            return "Infeasible in Phase I" , tableau  # Problem is infeasible
 
         return False , tableau
 
@@ -189,7 +189,7 @@ class TwoPhaseSolver(LPSolverInterface):
 
             if not ratios:
                 print("Unbounded Solution in Phase II")
-                return True , tableau
+                return "Unbounded Solution in Phase II" , tableau
 
             pivot_row = min(ratios, key=lambda x: x[0])[1]
             pivot_element = tableau[pivot_row, pivot_col]
@@ -217,7 +217,7 @@ class TwoPhaseSolver(LPSolverInterface):
     def solve(self, maximize, tableau_df):
         if tableau_df is None:
             print("Unsolvable with Two-Phase Simplex")
-            return None, self.steps, None
+            return "Unsolvable with Two-Phase Simplex", self.steps
 
         self.steps.append("PHASE I :\n")
         tableau = tableau_df.to_numpy()
@@ -228,20 +228,36 @@ class TwoPhaseSolver(LPSolverInterface):
         # Phase 1: Minimize the sum of artificial variables
         error, tableau = self.__phase_one(tableau)
 
-        if(error==True):
+        if(error):
             return error , self.steps
 
         #Phase 2 :
+        self.steps.append("PHASE II :\n")
         error , tableau = self.__phase_two(maximize , tableau)
 
         return error , self.steps
 
 
+# solver = TwoPhaseSolver()
+# objective_coeffs = [-1, -2 , -1]
+# constraint_coeffs = [
+#         [1, 1 , 1],
+#         [2 , -5 , 1],
+#     ]
+# rhs_values = [7 , 10]
+# rel_coeffs = ["=" , '≥']
+# restricted = [True, True , True]
+# tableau_df = solver.create_tableau(objective_coeffs, constraint_coeffs, rhs_values, rel_coeffs, restricted)
+# print("Initial Tableau:")
+# print(tableau_df)
 
 
+# optimal_value, steps = solver.solve(maximize=True, tableau_df=tableau_df)
 
-
-
+# print("\nOptimal Value:", optimal_value)
+# print("\nSteps:")
+# for step in steps:
+#     print(step, "\n")
 
 
 

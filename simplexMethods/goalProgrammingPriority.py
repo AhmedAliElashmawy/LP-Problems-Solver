@@ -3,12 +3,7 @@ import sympy as sp
 from .LpInterface import LPSolverInterface
 import sys
 
-
-
-
-
 LARGE_NUMBER = sys.float_info.max
-
 
 class GoalProgrammingPrioritySolver(LPSolverInterface):
     def __init__(self):

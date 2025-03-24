@@ -99,7 +99,7 @@ class BigMSolver(LPSolverInterface):
     def solve(self, maximize, tableau_df):
         if tableau_df is None:
             print("Unsolvable with Big-M method")
-            return True, self.steps
+            return "Unsolvable with Big-M method", self.steps
 
         tableau = sp.Matrix(tableau_df.to_numpy())
         self.var_names = list(tableau_df.columns)
@@ -128,7 +128,7 @@ class BigMSolver(LPSolverInterface):
 
             if pivot_row is None:
                 print("Unbounded solution detected.")
-                return True , self.steps
+                return "Unbounded solution detected." , self.steps
 
             # Update basic variable
             self.basic_vars[pivot_row] = self.var_names[pivot_col]
@@ -154,7 +154,7 @@ class BigMSolver(LPSolverInterface):
         for var in self.basic_vars:
             if var.startswith("a") and tableau[self.basic_vars.index(var), -1] != 0:
                 print("Infeasible solution detected.")
-                return None, self.steps, None
+                return "Infeasible solution detected.", self.steps
 
         # Handle unrestricted variables properly (y1 = y1+ - y1-)
         y_val = new_rhs.get("y1+", 0) - new_rhs.get("y1-", 0)

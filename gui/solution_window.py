@@ -80,7 +80,7 @@ class SolutionWindow(QWidget):
         
         self.answer_content.setText(final_answer)
 
-    def display_native_solution(self, content_widget, steps, final_answer):
+    def display_native_solution(self, content_widget, steps, final_answer, is_twophase=False):
         # Clear previous content
         for i in reversed(range(self.layout.count())): 
             self.layout.itemAt(i).widget().setParent(None)
@@ -95,35 +95,34 @@ class SolutionWindow(QWidget):
             self.layout.addWidget(answer_label)
             
             last_step = steps[-1]
-            last_line = last_step.split('\n')[-1].strip()
-            values = last_line.split()
-            headers = steps[0].split('\n')[0].split()
+            first_column = [line.split()[0] for line in last_step.split('\n')[1:-1]]
+            last_column = [line.split()[-1] for line in last_step.split('\n')[1:]]
+            print(first_column, last_column)
+            # Create LaTeX answer
+            z_value = last_column[-1]
+            # Extract all variable assignments from the last step
+            latex_answer = z_value + r" \text{ at } ("
+            latex_assignments = [f"{first_column[i]} = {last_column[i]}" for i in range(len(first_column))]
+            latex_answer += ", ".join(latex_assignments) + ")"
             
-            if values:
-                # Create LaTeX answer
-                z_value = values[-1]
-                latex_answer = z_value + r" \text{ at } ("
-                latex_assignments = [f"{header}={values[i]}" for i, header in enumerate(headers[:-1], 1) if i < len(values)]
-                latex_answer += ", ".join(latex_assignments) + ")"
-                
-                from .latex_renderer import LatexRenderer
-                answer_pixmap = LatexRenderer.render_lp_problem("", [latex_answer], [])
-                
-                # Create horizontal scroll area for final answer
-                answer_scroll = QScrollArea()
-                answer_scroll.setFixedHeight(100)  # Fixed vertical height
-                answer_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)  # Disable vertical scroll
-                answer_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)  # Enable horizontal scroll as needed
-                
-                answer_label = QLabel()
-                answer_label.setPixmap(answer_pixmap)
-                answer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                
-                answer_scroll.setWidget(answer_label)
-                self.layout.addWidget(answer_scroll)
-                
-                # Add separator after final answer
-                self.layout.addWidget(self.create_separator())
+            from .latex_renderer import LatexRenderer
+            answer_pixmap = LatexRenderer.render_lp_problem("", [latex_answer], [])
+            
+            # Create horizontal scroll area for final answer
+            answer_scroll = QScrollArea()
+            answer_scroll.setFixedHeight(100)  # Fixed vertical height
+            answer_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)  # Disable vertical scroll
+            answer_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)  # Enable horizontal scroll as needed
+            
+            answer_label = QLabel()
+            answer_label.setPixmap(answer_pixmap)
+            answer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            
+            answer_scroll.setWidget(answer_label)
+            self.layout.addWidget(answer_scroll)
+            
+            # Add separator after final answer
+            self.layout.addWidget(self.create_separator())
                 
         # Create scroll area for tables
         scroll_area = QScrollArea()
@@ -140,12 +139,42 @@ class SolutionWindow(QWidget):
             first_step_lines = steps[0].split('\n')
             if first_step_lines:
                 # Process headers once
-                headers = first_step_lines[0].split()
+                if is_twophase:
+                    headers = steps[1].split('\n')[0].split()
+                    phase_two_detected = False
+                else:
+                    headers = first_step_lines[0].split()
                 
                 # Process each step
                 for step_index, step in enumerate(steps):
-                    # Create step label
-                    step_label = QLabel(f"Step {step_index + 1}:")
+                    # Check for Phase II transition in two-phase method
+                    if is_twophase:
+                        if "PHASE II" in step:
+                            phase_two_detected = True
+                            # Create Phase II header
+                            phase_label = QLabel("PHASE II")
+                            phase_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+                            scroll_layout.addWidget(phase_label)
+                            temp = step_index
+                            continue  # Skip this step as it's just the phase marker
+                        
+                        # Add Phase I label before the first step
+                        if step_index == 0:
+                            phase_label = QLabel("PHASE I")
+                            phase_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+                            scroll_layout.addWidget(phase_label)
+                            continue  # Skip this step as it's just the phase marker
+                    
+                    # Create step label with appropriate numbering
+                    if is_twophase:
+                        if phase_two_detected:
+                            headers = steps[step_index].split('\n')[0].split()
+                            step_label = QLabel(f"Step {step_index - temp}:")
+                        else:
+                            step_label = QLabel(f"Step {step_index}:")
+                    else:
+                        step_label = QLabel(f"Step {step_index + 1}:")
+                    
                     step_label.setFont(QFont("Arial", 11, QFont.Weight.Bold))
                     scroll_layout.addWidget(step_label)
                     
