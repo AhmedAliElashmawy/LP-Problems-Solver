@@ -94,12 +94,3 @@ class BigMSolver(LPSolverInterface):
         return self.simplex_helper.solve(maximize, tableau)
 
 
-'''
-
-Maximize flag: False
-Objective coefficients: [3.0, 5.0]
-Constraint coefficients matrix: [[2.0, 3.0], [4.0, 1.0]]
-RHS values: [8.0, 7.0]
-Relation operators: ['≤', '=']
-Restricted variables flags: [True, True]
-'''

@@ -99,12 +99,13 @@ class SimplexSolver(LPSolverInterface):
 
             new_rhs = dict(zip(self.basic_vars, tableau[:-1, -1]))
 
-            for var, value in new_rhs.items():
-                if var.startswith("a") and value != 0:
-                    print("Infeasible solution detected.")
-                    return "Infeasible solution detected.", self.steps
-
             self.answer = tuple(new_rhs.get(var, 0) for var in self.var_names if var.startswith("x"))
+
+        for var, value in new_rhs.items():
+            if var.startswith("a") and abs(value) > 1e-7:
+                for step in self.steps:
+                    print(step)
+                return "Infeasible solution detected.", self.steps
 
         return None, self.steps
 

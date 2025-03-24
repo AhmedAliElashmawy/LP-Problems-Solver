@@ -96,11 +96,14 @@ class TwoPhaseSolver(LPSolverInterface):
         """
         Perform Phase 1 of the Simplex Method with NumPy arrays.
         """
-        # Step 1: Add artificial variables to Z row
-        artificial_cols = [i for i, name in enumerate(self.var_names) if 'a' in name]
-        for col in artificial_cols:
-            row_with_a = next(i for i in range(tableau.shape[0]-1) if tableau[i, col] == 1)
-            tableau[-1] += tableau[row_with_a]
+
+        for i, bv in enumerate(self.basic_vars):
+            col_index = self.var_names.index(bv)
+            if tableau[-1][col_index] != 0:
+                factor = tableau[-1][col_index] / tableau[i][col_index]
+                tableau[-1] -= factor * tableau[i]
+                self.steps.append(pd.DataFrame(tableau.copy(), index=self.basic_vars + ["Z"], columns=self.var_names))
+
 
         self.steps.append(pd.DataFrame(tableau.copy(), index=self.basic_vars + ["Z"], columns=self.var_names))
 
@@ -151,12 +154,6 @@ class TwoPhaseSolver(LPSolverInterface):
         """
         Perform Phase 2 of the Simplex Method with NumPy arrays.
         """
-        # Remove artificial columns
-        artificial_cols = [i for i, name in enumerate(self.var_names) if 'a' in name]
-        if artificial_cols:
-            keep_cols = [i for i in range(tableau.shape[1]) if i not in artificial_cols]
-            tableau = tableau[:, keep_cols]
-            self.var_names = [name for i, name in enumerate(self.var_names) if i not in artificial_cols]
 
         # Set up Phase 2 objective function
         tableau[-1] = 0
@@ -165,9 +162,16 @@ class TwoPhaseSolver(LPSolverInterface):
                 idx = next((j for j, name in enumerate(self.var_names) if name == col), None)
                 if idx is not None and idx < len(self.phase_two_obj_coeffs):
                     coeff = self.phase_two_obj_coeffs[idx]
-                    tableau[-1, i] = coeff if maximize else -coeff
+                    tableau[-1, i] = coeff
 
         self.steps.append(pd.DataFrame(tableau.copy(), index=self.basic_vars + ["Z"], columns=self.var_names))
+
+        for i, bv in enumerate(self.basic_vars):
+            col_index = self.var_names.index(bv)
+            if tableau[-1][col_index] != 0:
+                factor = tableau[-1][col_index] / tableau[i][col_index]
+                tableau[-1] -= factor * tableau[i]
+                self.steps.append(pd.DataFrame(tableau.copy(), index=self.basic_vars + ["Z"], columns=self.var_names))
 
         while True:
             # Check optimality
@@ -234,6 +238,8 @@ class TwoPhaseSolver(LPSolverInterface):
         #Phase 2 :
         self.steps.append("PHASE II :\n")
         error , tableau = self.__phase_two(maximize , tableau)
+        if not maximize:
+            return error, self.steps[:-1]
 
         return error , self.steps
 
