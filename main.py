@@ -7,3 +7,5 @@ if __name__ == '__main__':
     window = LPSolverGUI()
     window.show()
     sys.exit(app.exec())
+
+

@@ -71,11 +71,6 @@ class SimplexSolver(LPSolverInterface):
                 self.steps.append(pd.DataFrame(tableau.copy(), index=self.basic_vars + ["Z"], columns=self.var_names))
 
 
-        # Detect infeasibility
-        for i in range(tableau.shape[0] - 1):
-            if tableau[i, -1] < 0 and np.all(tableau[i, :-1] <= 0):
-                return "Infeasible solution detected.", self.steps
-
         while np.any(tableau[-1, :-1] < 0 if maximize else tableau[-1, :-1] > 0):
             pivot_col = np.argmin(tableau[-1, :-1]) if maximize else np.argmax(tableau[-1, :-1])
             ratios = np.full(tableau.shape[0] - 1, np.inf)
@@ -103,6 +98,12 @@ class SimplexSolver(LPSolverInterface):
             self.steps.append(pd.DataFrame(tableau.copy(), index=self.basic_vars + ["Z"], columns=self.var_names))
 
             new_rhs = dict(zip(self.basic_vars, tableau[:-1, -1]))
+
+            for var, value in new_rhs.items():
+                if var.startswith("a") and value != 0:
+                    print("Infeasible solution detected.")
+                    return "Infeasible solution detected.", self.steps
+
             self.answer = tuple(new_rhs.get(var, 0) for var in self.var_names if var.startswith("x"))
 
         return None, self.steps
