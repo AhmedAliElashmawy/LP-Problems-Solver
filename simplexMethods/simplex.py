@@ -70,6 +70,7 @@ class SimplexSolver(LPSolverInterface):
                 tableau[-1] -= factor * tableau[i]
                 self.steps.append(pd.DataFrame(tableau.copy(), index=self.basic_vars + ["Z"], columns=self.var_names))
 
+        new_rhs = dict(zip(self.basic_vars, tableau[:-1, -1])) # new_rhs defined outside the loop
 
         while np.any(tableau[-1, :-1] < 0 if maximize else tableau[-1, :-1] > 0):
             pivot_col = np.argmin(tableau[-1, :-1]) if maximize else np.argmax(tableau[-1, :-1])
