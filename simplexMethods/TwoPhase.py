@@ -71,6 +71,7 @@ class TwoPhaseSolver(LPSolverInterface):
             self.basic_vars.append(f"a{artifical_var_id}" if rel in ["=", "≥"] else f"s{slack_var_id}")
             if rel in ["=", "≥"]:
                 artifical_var_id += 1
+                slack_var_id += 1
             else:
                 slack_var_id += 1
 
@@ -98,6 +99,8 @@ class TwoPhaseSolver(LPSolverInterface):
         """
 
         for i, bv in enumerate(self.basic_vars):
+            if not bv.startswith("a"):  # Skip variables that don't start with "a"
+                continue
             col_index = self.var_names.index(bv)
             if tableau[-1][col_index] != 0:
                 factor = tableau[-1][col_index] / tableau[i][col_index]
@@ -160,6 +163,12 @@ class TwoPhaseSolver(LPSolverInterface):
         """
         Perform Phase 2 of the Simplex Method with NumPy arrays.
         """
+
+        artificial_cols = [i for i, name in enumerate(self.var_names) if 'a' in name]
+        if artificial_cols:
+            keep_cols = [i for i in range(tableau.shape[1]) if i not in artificial_cols]
+            tableau = tableau[:, keep_cols]
+            self.var_names = [name for i, name in enumerate(self.var_names) if i not in artificial_cols]
 
         # Set up Phase 2 objective function
         tableau[-1] = 0
@@ -249,8 +258,6 @@ class TwoPhaseSolver(LPSolverInterface):
         #Phase 2 :
         self.steps.append("PHASE II :\n")
         error , tableau = self.__phase_two(maximize , tableau)
-        if not maximize:
-            return error, self.steps[:-1]
 
         return error , self.steps
 

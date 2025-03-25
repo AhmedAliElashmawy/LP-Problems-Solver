@@ -69,6 +69,7 @@ class BigMSolver(LPSolverInterface):
             self.basic_vars.append(f"a{artificial_var_id}" if rel in ["=", "≥"] else f"s{slack_var_id}")
             if rel in ["=", "≥"]:
                 artificial_var_id += 1
+                slack_var_id+=1
             else:
                 slack_var_id += 1
 
