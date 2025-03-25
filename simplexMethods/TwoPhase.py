@@ -107,7 +107,9 @@ class TwoPhaseSolver(LPSolverInterface):
 
         self.steps.append(pd.DataFrame(tableau.copy(), index=self.basic_vars + ["Z"], columns=self.var_names))
 
-        while True:
+        count = 0
+        while True and count != 1000:
+            count += 1
             if abs(tableau[-1, -1]) < 1e-10 and np.max(tableau[-1, :-1]) <= 1e-10:
                 break
 
@@ -144,6 +146,10 @@ class TwoPhaseSolver(LPSolverInterface):
             self.steps.append(pd.DataFrame(tableau.copy(), index=self.basic_vars + ["Z"], columns=self.var_names))
 
         # Check feasibility
+
+        if count == 1000:
+            return "Unbounded solution detected.", self.steps
+
         if abs(tableau[-1, -1]) > 1e-10:
             print("Infeasible in Phase I")
             return "Infeasible in Phase I" , tableau  # Problem is infeasible
@@ -173,7 +179,9 @@ class TwoPhaseSolver(LPSolverInterface):
                 tableau[-1] -= factor * tableau[i]
                 self.steps.append(pd.DataFrame(tableau.copy(), index=self.basic_vars + ["Z"], columns=self.var_names))
 
-        while True:
+        count = 0
+        while True and count != 1000:
+            count += 1
             # Check optimality
             obj_row = tableau[-1, :-1]
             if maximize:
@@ -211,6 +219,9 @@ class TwoPhaseSolver(LPSolverInterface):
         self.steps.append(pd.DataFrame(tableau.copy(), index=self.basic_vars + ["Z"], columns=self.var_names))
 
         # Extract solution
+        if count == 1000:
+            return "Unbounded solution detected.", self.steps
+
         self.answer = {var: 0 for var in self.var_names[:-1]}
         for i, basic_var in enumerate(self.basic_vars):
             if basic_var in self.answer:

@@ -72,7 +72,10 @@ class SimplexSolver(LPSolverInterface):
 
         new_rhs = dict(zip(self.basic_vars, tableau[:-1, -1])) # new_rhs defined outside the loop
 
-        while np.any(tableau[-1, :-1] < 0 if maximize else tableau[-1, :-1] > 0):
+        count = 0
+
+        while np.any(tableau[-1, :-1] < 0 if maximize else tableau[-1, :-1] > 0) and count != 1000:
+            count += 1
             pivot_col = np.argmin(tableau[-1, :-1]) if maximize else np.argmax(tableau[-1, :-1])
             ratios = np.full(tableau.shape[0] - 1, np.inf)
 
@@ -101,6 +104,9 @@ class SimplexSolver(LPSolverInterface):
             new_rhs = dict(zip(self.basic_vars, tableau[:-1, -1]))
 
             self.answer = tuple(new_rhs.get(var, 0) for var in self.var_names if var.startswith("x"))
+
+        if count == 1000:
+            return "Unbounded solution detected.", self.steps
 
         for var, value in new_rhs.items():
             if var.startswith("a") and abs(value) > 1e-7:
