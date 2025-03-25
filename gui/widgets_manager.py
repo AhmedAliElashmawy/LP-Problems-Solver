@@ -128,15 +128,32 @@ class WidgetsManager:
         self.parent.center_window()
         self.parent.table_manager.create_tables()
         
-        # Disable inputs
+        # Disable inputs and set color
+        disabled_style = """QRadioButton::indicator::checked {
+        background-color: #0d0d0d;
+        border: 2px solid #050505;
+        }
+            QRadioButton::indicator {
+        width: 16px;
+        height: 16px;
+        border-radius: 8px;
+        border: 2px solid #050505;
+    }"""
         self.parent.var_count.setEnabled(False)
         self.parent.constraint_count.setEnabled(False)
-        self.parent.non_negative_radio.setEnabled(False)
-        self.parent.unrestricted_radio.setEnabled(False)
-        self.parent.simplex_radio.setEnabled(False)
-        self.parent.bigm_radio.setEnabled(False)
-        self.parent.twophase_radio.setEnabled(False)
-        self.parent.goal_programming.setEnabled(False)
+        
+        radio_buttons = [
+            self.parent.non_negative_radio,
+            self.parent.unrestricted_radio,
+            self.parent.simplex_radio,
+            self.parent.bigm_radio,
+            self.parent.twophase_radio,
+            self.parent.goal_programming
+        ]
+        
+        for radio in radio_buttons:
+            radio.setEnabled(False)
+            radio.setStyleSheet(disabled_style)
         
         # Show widgets
         widgets = [
@@ -184,13 +201,17 @@ class WidgetsManager:
         # Enable inputs
         self.parent.var_count.setEnabled(True)
         self.parent.constraint_count.setEnabled(True)
-        self.parent.non_negative_radio.setEnabled(True)
-        self.parent.unrestricted_radio.setEnabled(True)
-        self.parent.simplex_radio.setEnabled(True)
-        self.parent.bigm_radio.setEnabled(True)
-        self.parent.twophase_radio.setEnabled(True)
-        self.parent.goal_programming.setEnabled(True)
-        
+        radio_buttons = [
+            self.parent.non_negative_radio,
+            self.parent.unrestricted_radio,
+            self.parent.simplex_radio,
+            self.parent.bigm_radio,
+            self.parent.twophase_radio,
+            self.parent.goal_programming
+        ]
+        for radio in radio_buttons:
+            radio.setEnabled(True)
+            radio.setStyleSheet("")
         # Reset tables
         self.parent.var_restrictions_table.setRowCount(0)
         self.parent.priority_table.setRowCount(0)
