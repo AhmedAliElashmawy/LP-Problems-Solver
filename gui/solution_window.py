@@ -17,55 +17,6 @@ class SolutionWindow(QWidget):
     def init_ui(self):
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
-        self.setStyleSheet("""
-            QWidget {
-                background-color: #1C1C1C;
-                color: #D0D0D0;
-            }
-            QLabel {
-                color: #D0D0D0;
-                font-weight: bold;
-            }
-            QScrollArea {
-                border: 1px solid #2A2A2A;
-                border-radius: 8px;
-                background-color: #1C1C1C;
-            }
-            QPushButton {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #007ACC, stop:1 #005A9E);
-                color: white;
-                border: 1px solid #004C8C;
-                border-radius: 6px;
-                padding: 8px 16px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background: #008CFF;
-                border: 1px solid #006BB3;
-            }
-            QPushButton:pressed {
-                background: #005A9E;
-            }
-            QTableWidget {
-                background-color: #1C1C1C;
-                gridline-color: #3A3A3A;
-                border: 1px solid #3A3A3A;
-                border-radius: 6px;
-            }
-            QTableWidget::item {
-                padding: 5px;
-                color: #E0E0E0;
-            }
-            QTableWidget QHeaderView::section {
-                background-color: #252526;
-                color: #E0E0E0;
-                padding: 5px;
-                border: 1px solid #3A3A3A;
-            }
-            QFrame[frameShape="4"] {
-                color: #3A3A3A;
-            }
-        """)
 
         # Create scrollable area for solution steps
         self.scroll = QScrollArea()
@@ -130,7 +81,7 @@ class SolutionWindow(QWidget):
         
         self.answer_content.setText(final_answer)
 
-    def display_native_solution(self, content_widget, steps, final_answer, is_twophase=False, is_goalprogramming=False, NumGoals=0):
+    def display_native_solution(self, content_widget, steps, final_answer, is_twophase=False, is_goalprogramming=False, NumGoals=1):
         # Clear previous content
         for i in reversed(range(self.layout.count())): 
             self.layout.itemAt(i).widget().setParent(None)
@@ -138,11 +89,19 @@ class SolutionWindow(QWidget):
         # Add the problem formulation
         self.layout.addWidget(content_widget)
         
+        # Create compact scroll area for LaTeX answers
+        latex_scroll = QScrollArea()
+        latex_scroll.setWidgetResizable(True)
+        latex_scroll.setFixedHeight(120)  # Fixed compact height
+        latex_content = QWidget()
+        latex_layout = QVBoxLayout(latex_content)
+        latex_scroll.setWidget(latex_content)
+        
         # Format and display final answer first
         if final_answer and steps:
             answer_label = QLabel("Final Answer:")
             answer_label.setFont(QFont("Arial", 11, QFont.Weight.Bold))
-            self.layout.addWidget(answer_label)
+            latex_layout.addWidget(answer_label)
             
             last_step = steps[-1]
             if(is_goalprogramming):
@@ -153,18 +112,20 @@ class SolutionWindow(QWidget):
                     latex_answer = z_value + r" \text{ at } ("
                     latex_assignments = [f"{first_column[i]} = {last_column[i]}" for i in range(len(first_column))]
                     latex_answer += ", ".join(latex_assignments) + ")"
-                    self.latex(latex_answer, True, NumGoals-i)
+                    self.latex(latex_answer, latex_layout, True, NumGoals-i, z_value)
             else:
                 first_column = [line.split()[0] for line in last_step.split('\n')[1:-1]]
                 last_column = [line.split()[-1] for line in last_step.split('\n')[1:]]
                 z_value = last_column[-1]
-                # Extract all variable assignments from the last step
                 latex_answer = z_value + r" \text{ at } ("
                 latex_assignments = [f"{first_column[i]} = {last_column[i]}" for i in range(len(first_column))]
                 latex_answer += ", ".join(latex_assignments) + ")"
-                self.latex(latex_answer)
+                self.latex(latex_answer, latex_layout, False, 0, z_value)
             print(first_column, last_column)
-            
+        
+        # Add the LaTeX scroll area to main layout
+        self.layout.addWidget(latex_scroll)
+        self.layout.addWidget(self.create_separator())
             
         # Create scroll area for tables
         scroll_area = QScrollArea()
@@ -278,24 +239,27 @@ class SolutionWindow(QWidget):
         back_btn.clicked.connect(self.go_back)
         self.layout.addWidget(back_btn)
 
-    def latex(self, latex_answer, is_goalprogramming=False, goal_number=0):
+    def is_non_zero(self, value):
+        """Check if a value is non-zero, handling both numeric and algebraic expressions."""
+        try:
+            # Try converting to float first
+            return float(value.strip()) != 0
+        except ValueError:
+            # If it contains algebraic expressions, check if it's not just "0"
+            return value.strip() != "0"
+
+    def latex(self, latex_answer, parent_layout, is_goalprogramming=False, goal_number=0, z_value='0'):
         answer_pixmap = LatexRenderer.render_lp_problem("", [latex_answer], [], is_goalprogramming, goal_number)
-            
-            # Create horizontal scroll area for final answer
-        answer_scroll = QScrollArea()
-        answer_scroll.setFixedHeight(60)  # Fixed vertical height
-        answer_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)  # Disable vertical scroll
-        answer_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)  # Enable horizontal scroll as needed
             
         answer_label = QLabel()
         answer_label.setPixmap(answer_pixmap)
         answer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            
-        answer_scroll.setWidget(answer_label)
-        self.layout.addWidget(answer_scroll)
-            
-            # Add separator after final answer
-        self.layout.addWidget(self.create_separator())
+        
+        # Set dark background if z_value is not zero
+        if is_goalprogramming and self.is_non_zero(z_value):
+            answer_label.setStyleSheet("background-color: #0F0F0F;")
+        
+        parent_layout.addWidget(answer_label)
 
     def go_back(self):
         self.hide()

@@ -172,7 +172,7 @@ class LPSolverGUI(QMainWindow):
             problem_type.lower(),
             obj_terms,
             latex_constraints,
-            self.priority_radio.isChecked(),
+            self.goal_programming.isChecked(),
         )
         math_label.setPixmap(math_pixmap)
         math_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -256,7 +256,7 @@ class LPSolverGUI(QMainWindow):
         self.hide()
         if self.twophase_radio.isChecked():
             self.solution_window.display_native_solution(content_widget, string_steps, final_answer, True, False)
-        elif self.goal_programming.isChecked():
+        elif self.goal_programming.isChecked() and self.priority_radio.isChecked():
             print(self.priority_table.columnCount())
             self.solution_window.display_native_solution(content_widget, string_steps, final_answer, False, True, self.priority_table.columnCount())
         else:
