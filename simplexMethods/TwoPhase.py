@@ -30,22 +30,21 @@ class TwoPhaseSolver(LPSolverInterface):
         expanded_constraint_coeffs = []
         artificial_var_id = 1
         slack_var_id = 1
-        unrestricted_var_id = 1
+        original_var_id = 1
 
         # Step 1: Handle original and unrestricted variables
         for i in range(num_variables):
             if restricted[i]:
                 expanded_constraint_coeffs.append([row[i] for row in constraint_coeffs])
                 expanded_phase_two_coeffs.append(-objective_coeffs[i])  # Phase 2 objective
-                header_row.append(f"x{unrestricted_var_id}")
-                unrestricted_var_id += 1
+                header_row.append(f"x{original_var_id}")
             else:
                 expanded_constraint_coeffs.append([row[i] for row in constraint_coeffs])
                 expanded_constraint_coeffs.append([-row[i] for row in constraint_coeffs])
                 expanded_phase_two_coeffs.append(-objective_coeffs[i])  # Phase 2 objective
                 expanded_phase_two_coeffs.append(objective_coeffs[i])  # Phase 2 objective (negative for unrestricted)
-                header_row.extend([f"y{unrestricted_var_id}+", f"y{unrestricted_var_id}-"])
-                unrestricted_var_id += 1
+                header_row.extend([f"x{original_var_id}+", f"x{original_var_id}-"])
+            original_var_id += 1
 
         expanded_phase_two_coeffs.extend([0]*(num_slack_vars+num_artificial_vars))
 

@@ -26,7 +26,7 @@ class BigMSolver(LPSolverInterface):
 
         tableau = np.zeros((num_constraints + 1, total_variables + 1))
 
-        artificial_var_id = slack_var_id = unrestricted_var_id = restricted_var_id = 1
+        artificial_var_id = slack_var_id = original_var_id = 1
         header_row = []
         expanded_obj_coeffs = []
         expanded_constraint_coeffs = []
@@ -36,15 +36,14 @@ class BigMSolver(LPSolverInterface):
             if restricted[i]:
                 expanded_constraint_coeffs.append([row[i] for row in constraint_coeffs])
                 expanded_obj_coeffs.append(-objective_coeffs[i])
-                header_row.append(f"x{restricted_var_id}")
-                restricted_var_id += 1
+                header_row.append(f"x{original_var_id}")
             else:
                 expanded_constraint_coeffs.append([row[i] for row in constraint_coeffs])
                 expanded_constraint_coeffs.append([-row[i] for row in constraint_coeffs])
                 expanded_obj_coeffs.append(-objective_coeffs[i])
                 expanded_obj_coeffs.append(objective_coeffs[i])
-                header_row.extend([f"y{unrestricted_var_id}+", f"y{unrestricted_var_id}-"])
-                unrestricted_var_id += 1
+                header_row.extend([f"x{original_var_id}+", f"x{original_var_id}-"])
+            original_var_id += 1
 
         # Handles slack variables
         for i in range(len(rel_coeffs)):
